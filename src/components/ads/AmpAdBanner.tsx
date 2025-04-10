@@ -20,12 +20,15 @@ const AD_SIZES = {
 const AD_SLOTS = {
   top: '1013879949',      // HZ1 - Horizontal 1 (top banner)
   bottom: '9387666749',   // HZ2 - Horizontal 2 (bottom banner)
-  left: '1013879949',     // Using HZ1 slot for left for now
-  right: '1013879949',    // Using HZ1 slot for right for now
+  left: '8620907222',     // VL1 - Vertical Left 1 (skyscraper)
+  right: '8340100968',    // VR1 - Vertical Right 1 (skyscraper)
 };
 
 export function AmpAdBanner({ size, position, className = '', adSlot }: AmpAdBannerProps) {
   const { width, height } = AD_SIZES[size];
+  // While slotId isn't used directly in the rendered output,
+  // it's useful for debugging and might be used in future implementations
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const slotId = adSlot || AD_SLOTS[position];
   
   return (
@@ -57,6 +60,8 @@ export function AmpAdBanner({ size, position, className = '', adSlot }: AmpAdBan
         <div className="text-gray-400 text-sm text-center">
           {position === 'top' ? 'HZ1 - AMP Horizontal 1' : 
            position === 'bottom' ? 'HZ2 - AMP Horizontal 2' : 
+           position === 'left' ? 'VL1 - AMP Vertical Left 1' :
+           position === 'right' ? 'VR1 - AMP Vertical Right 1' :
            `AMP Ad (${width}x${height})`}
           <div className="text-xs mt-1">Position: {position}</div>
         </div>

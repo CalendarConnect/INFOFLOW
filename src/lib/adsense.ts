@@ -44,6 +44,7 @@ export function injectAdSenseAd(container: HTMLElement, config: AdConfig): void 
  */
 export function refreshAds(): void {
   try {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const adsbygoogle = (window as any).adsbygoogle;
     if (adsbygoogle) {
       document.querySelectorAll('ins.adsbygoogle').forEach(() => {

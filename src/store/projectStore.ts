@@ -121,6 +121,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         console.log('Creating new project:', updatedProject.name);
         
         // Filter out snapToGrid from canvasSettings for Convex compatibility
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { snapToGrid, ...convexCanvasSettings } = updatedProject.canvasSettings;
         
         projectId = await convexClient.mutation(api.projects.createProject, {
@@ -137,6 +138,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         console.log('Updating existing project:', currentProject.id);
         
         // Filter out snapToGrid from canvasSettings for Convex compatibility
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { snapToGrid, ...convexCanvasSettings } = updatedProject.canvasSettings;
         
         await convexClient.mutation(api.projects.updateProject, {

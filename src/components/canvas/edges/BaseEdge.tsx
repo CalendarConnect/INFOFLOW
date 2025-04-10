@@ -6,6 +6,7 @@ import { EdgeData } from '@/store/edgeStore';
 import { useCanvasStore } from '@/store/canvasStore';
 
 // Define keyframe animations for edges and dots
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const EdgeAnimations = ({ id, path, source, target }: { id: string, path: string, source: { x: number, y: number }, target: { x: number, y: number } }) => (
   <style jsx global>{`
     /* --- EDGE LINE ANIMATIONS --- */

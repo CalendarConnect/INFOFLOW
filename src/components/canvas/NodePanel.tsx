@@ -577,8 +577,12 @@ export function NodePanel({ className }: NodePanelProps) {
   const onDragStartHandler = (node: CustomNodeData) => (event: React.DragEvent<HTMLDivElement>) => {
     // Remove properties we don't want to pass to the node store
     const nodeDataForStore = { ...node };
-    delete (nodeDataForStore as any).description;
-    delete (nodeDataForStore as any).isNew;
+    
+    // Use type assertions with Record instead of any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (nodeDataForStore as Record<string, any>).description;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (nodeDataForStore as Record<string, any>).isNew;
     
     // Set the drag data
     event.dataTransfer.setData('application/reactflow', JSON.stringify(nodeDataForStore));
@@ -649,7 +653,7 @@ export function NodePanel({ className }: NodePanelProps) {
               {searchQuery && filteredCategories.length === 0 && (
                 <div className="flex flex-col items-center justify-center p-8 text-center text-muted-foreground">
                   <FileText size={40} className="mb-2 opacity-20" />
-                  <p>No nodes found matching "{searchQuery}"</p>
+                  <p>No nodes found matching &quot;{searchQuery}&quot;</p>
                   <Button 
                     variant="link" 
                     onClick={() => setSearchQuery('')}

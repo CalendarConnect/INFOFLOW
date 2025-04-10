@@ -13,7 +13,7 @@ const AD_SLOTS = {
   top: '1013879949',      // HZ1 - Horizontal 1 (top banner)
   bottom: '9387666749',   // HZ2 - Horizontal 2 (bottom banner)
   left: '8620907222',     // VL1 - Vertical Left 1 (skyscraper)
-  right: '9340100968',    // VR1 - Vertical Right 1 (skyscraper)
+  right: '8340100968',    // VR1 - Vertical Right 1 (skyscraper)
 };
 
 export function AmpAd({ 
@@ -22,6 +22,9 @@ export function AmpAd({
   adSlot, 
   className = "",
   position,
+  // Keep adType in the parameters even if not directly used
+  // to maintain API compatibility and for future use
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   adType = "horizontal"
 }: AmpAdProps) {
   const slotId = adSlot || (position ? AD_SLOTS[position] : '');
