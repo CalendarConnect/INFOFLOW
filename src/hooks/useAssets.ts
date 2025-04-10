@@ -1,19 +1,10 @@
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+// Replaced Convex implementation with a simple mock
 
 export function useAssets() {
-  // These hooks are called directly inside the hook function
-  const allAssets = useQuery(api.assets.listAssets, { type: undefined });
-  const generateUploadUrl = useMutation(api.assets.generateUploadUrl);
-  const createAsset = useMutation(api.assets.createAsset);
-  const deleteAsset = useMutation(api.assets.deleteAsset);
-  
-  // Return the query results and a function to filter assets
+  // This is just a mock implementation since we don't have real asset management without Convex
   return {
-    assets: allAssets,
-    filterAssetsByType: (type: string) => allAssets?.filter(asset => asset.type === type) || [],
-    generateUploadUrl,
-    createAsset,
-    deleteAsset
+    getUploadUrl: () => Promise.resolve(''),
+    assets: [],
+    isLoading: false
   };
 } 

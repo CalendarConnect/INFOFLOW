@@ -1,17 +1,11 @@
 import { create } from 'zustand';
-import { Edge, Node } from 'reactflow';
+import { Node } from 'reactflow';
 import { NodeData } from './nodeStore';
+import { Edge } from 'reactflow';
 import { EdgeData } from './edgeStore';
-import { CanvasSettings } from './canvasStore';
-import { v4 as uuidv4 } from 'uuid';
-import { Id } from '../../convex/_generated/dataModel';
+import { CanvasSettings, useCanvasStore } from './canvasStore';
 import { useNodeStore } from './nodeStore';
 import { useEdgeStore } from './edgeStore';
-import { useCanvasStore } from './canvasStore';
-import { api } from '../../convex/_generated/api';
-
-// Import ConvexClient type
-import type { ConvexReactClient } from 'convex/react';
 
 export interface Project {
   id: string;
@@ -33,8 +27,8 @@ interface ProjectState {
   error: string | null;
   // Actions
   createNewProject: (name: string, description?: string) => void;
-  saveProject: (convexClient: ConvexReactClient) => Promise<void>;
-  loadProject: (projectId: string, convexClient: ConvexReactClient) => Promise<void>;
+  saveProject: () => Promise<void>;
+  loadProject: (projectId: string) => Promise<void>;
   updateProjectMetadata: (data: { name?: string; description?: string }) => void;
   setError: (error: string | null) => void;
 }
@@ -58,14 +52,20 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   
   // Create a new project
   createNewProject: (name, description = '') => {
-    // Create a new project with default values
+    // Generate a unique ID for the project
+    const id = `project_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Get the current canvas settings
+    const canvasSettings = { ...useCanvasStore.getState().canvasSettings };
+    
+    // Create a new project
     const newProject: Project = {
-      id: uuidv4(), // Temporary ID until saved to Convex
+      id,
       name,
       description,
       createdAt: Date.now(),
       updatedAt: Date.now(),
-      canvasSettings: defaultCanvasSettings,
+      canvasSettings,
       nodes: [],
       edges: [],
       version: 1,
@@ -76,90 +76,65 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       lastSavedAt: null,
       error: null,
     });
-    
-    // Initialize stores with empty data
-    useNodeStore.getState().setNodes([]);
-    useEdgeStore.getState().setEdges([]);
-    useCanvasStore.getState().updateCanvasSettings(defaultCanvasSettings);
   },
   
   // Save the current project
-  saveProject: async (convexClient) => {
-    const { currentProject } = get();
-    if (!currentProject) return;
-    
+  saveProject: async () => {
     set({ isSaving: true, error: null });
     
     try {
-      // Get current state from stores
+      const { currentProject } = get();
+      if (!currentProject) {
+        throw new Error('No project to save');
+      }
+      
+      // Get current nodes and edges from their respective stores
       const nodes = useNodeStore.getState().nodes;
       const edges = useEdgeStore.getState().edges;
       const canvasSettings = useCanvasStore.getState().canvasSettings;
       
-      // Update project with current data
+      // Create an updated project
       const updatedProject: Project = {
         ...currentProject,
-        updatedAt: Date.now(),
-        canvasSettings,
         nodes,
         edges,
-        version: currentProject.version + 1,
+        canvasSettings,
+        updatedAt: Date.now(),
       };
       
-      let projectId;
+      // Save to local storage
+      localStorage.setItem(`flowcanvas_project_${updatedProject.id}`, JSON.stringify(updatedProject));
       
-      // Check if this is a Convex ID
-      // Convex IDs are in the format "tableName:base64string"
-      const isConvexId = typeof currentProject.id === 'string' && 
-                        currentProject.id.includes(':') && 
-                        currentProject.id.startsWith('projects:');
+      // Update the list of projects
+      const projectList = JSON.parse(localStorage.getItem('flowcanvas_projects') || '[]');
+      const existingIndex = projectList.findIndex((p: {id: string}) => p.id === updatedProject.id);
       
-      console.log('Project ID:', currentProject.id, 'Is Convex ID:', isConvexId);
-      
-      if (!isConvexId) {
-        // It's a new project, create it in Convex
-        console.log('Creating new project:', updatedProject.name);
-        
-        // Filter out snapToGrid from canvasSettings for Convex compatibility
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { snapToGrid, ...convexCanvasSettings } = updatedProject.canvasSettings;
-        
-        projectId = await convexClient.mutation(api.projects.createProject, {
+      if (existingIndex >= 0) {
+        projectList[existingIndex] = {
+          id: updatedProject.id,
           name: updatedProject.name,
-          canvasSettings: convexCanvasSettings,
-        });
-        
-        console.log('Created new project with ID:', projectId);
-        
-        // Update the project with the Convex ID
-        updatedProject.id = projectId;
+          updatedAt: updatedProject.updatedAt,
+        };
       } else {
-        // It's an existing project, update it
-        console.log('Updating existing project:', currentProject.id);
-        
-        // Filter out snapToGrid from canvasSettings for Convex compatibility
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
-        const { snapToGrid, ...convexCanvasSettings } = updatedProject.canvasSettings;
-        
-        await convexClient.mutation(api.projects.updateProject, {
-          projectId: currentProject.id as unknown as Id<'projects'>,
-          update: {
-            name: updatedProject.name,
-            canvasSettings: convexCanvasSettings,
-            nodes: updatedProject.nodes,
-            edges: updatedProject.edges,
-          },
+        projectList.push({
+          id: updatedProject.id,
+          name: updatedProject.name,
+          updatedAt: updatedProject.updatedAt,
         });
-        
-        console.log('Updated project successfully');
-        
-        projectId = currentProject.id;
       }
       
+      localStorage.setItem('flowcanvas_projects', JSON.stringify(projectList));
+      
       // Add to recent projects
-      await convexClient.mutation(api.userSettings.addRecentProject, { 
-        projectId: projectId as unknown as Id<'projects'> 
-      });
+      const recentProjects = JSON.parse(localStorage.getItem('flowcanvas_recent_projects') || '[]');
+      const recentIndex = recentProjects.indexOf(updatedProject.id);
+      
+      if (recentIndex >= 0) {
+        recentProjects.splice(recentIndex, 1);
+      }
+      
+      recentProjects.unshift(updatedProject.id);
+      localStorage.setItem('flowcanvas_recent_projects', JSON.stringify(recentProjects.slice(0, 5)));
       
       set({
         currentProject: updatedProject,
@@ -176,58 +151,18 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
   
   // Load a project by ID
-  loadProject: async (projectId, convexClient) => {
+  loadProject: async (projectId) => {
     set({ isLoading: true, error: null });
     
     try {
-      console.log('Loading project with ID:', projectId);
+      // Load from local storage
+      const projectData = localStorage.getItem(`flowcanvas_project_${projectId}`);
       
-      // Check if the ID is already in Convex format
-      const isConvexId = typeof projectId === 'string' && 
-                         projectId.includes(':') && 
-                         projectId.startsWith('projects:');
-                         
-      console.log('Is projectId already a Convex ID?', isConvexId);
-      
-      // Convert to Convex ID if needed
-      const convexProjectId = isConvexId 
-        ? projectId as unknown as Id<'projects'>
-        : projectId as unknown as Id<'projects'>;
-      
-      console.log('Using Convex Project ID:', convexProjectId);
-        
-      const getProject = await convexClient.query(api.projects.getProject, { 
-        projectId: convexProjectId
-      });
-      
-      if (!getProject) {
+      if (!projectData) {
         throw new Error('Project not found');
       }
       
-      console.log('Retrieved project:', getProject);
-      console.log('Project _id:', getProject._id);
-      
-      // Convert Convex project to our Project format
-      // Add any missing fields required by our local model
-      const loadedProject: Project = {
-        // IMPORTANT: Use the _id from the retrieved project to ensure 
-        // we have the proper Convex ID format
-        id: getProject._id,
-        name: getProject.name,
-        description: '', // Provide default empty string for description
-        createdAt: getProject.createdAt,
-        updatedAt: getProject.updatedAt,
-        // Add snapToGrid property to canvasSettings if it's missing
-        canvasSettings: {
-          ...getProject.canvasSettings,
-          snapToGrid: false, // Default to false if not present
-        },
-        nodes: getProject.nodes || [],
-        edges: getProject.edges || [],
-        version: getProject.version,
-      };
-      
-      console.log('Loaded project with ID:', loadedProject.id);
+      const loadedProject: Project = JSON.parse(projectData);
       
       // Update all stores with loaded data
       useNodeStore.getState().setNodes(loadedProject.nodes);
@@ -239,6 +174,17 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         isLoading: false,
         lastSavedAt: loadedProject.updatedAt,
       });
+      
+      // Update recent projects
+      const recentProjects = JSON.parse(localStorage.getItem('flowcanvas_recent_projects') || '[]');
+      const recentIndex = recentProjects.indexOf(projectId);
+      
+      if (recentIndex >= 0) {
+        recentProjects.splice(recentIndex, 1);
+      }
+      
+      recentProjects.unshift(projectId);
+      localStorage.setItem('flowcanvas_recent_projects', JSON.stringify(recentProjects.slice(0, 5)));
     } catch (err) {
       console.error('Error loading project:', err);
       set({

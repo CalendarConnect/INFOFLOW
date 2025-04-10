@@ -1,110 +1,69 @@
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { Id } from "../../convex/_generated/dataModel";
-
-// Define types that align with what the frontend expects to send
-export interface CreateProjectRequest {
-  name: string;
-  canvasSettings?: {
-    width: number;
-    height: number;
-    background: string;
-    grid: boolean;
-    gridSize: number;
-    snapToGrid?: boolean; // This is not stored in Convex
-  };
-}
-
-export interface UpdateProjectRequest {
-  projectId: Id<"projects">;
-  update: {
-    name?: string;
-    nodes?: unknown[];
-    edges?: unknown[];
-    canvasSettings?: {
-      width?: number;
-      height?: number;
-      background?: string;
-      grid?: boolean;
-      gridSize?: number;
-      snapToGrid?: boolean; // This is not stored in Convex
-    };
-  };
-}
-
-export interface DeleteProjectRequest {
-  projectId: Id<"projects">;
-}
+// Replaced Convex implementation with local storage
 
 export function useProjects() {
-  // Get all projects
-  const projects = useQuery(api.projects.listProjects);
-  
-  // Create a project
-  const createProjectMutation = useMutation(api.projects.createProject);
-  
-  const createProject = async (args: CreateProjectRequest) => {
-    // Prepare args for Convex by removing unsupported fields
-    const convexArgs: {
-      name: string;
-      canvasSettings?: Omit<NonNullable<CreateProjectRequest['canvasSettings']>, 'snapToGrid'>;
-    } = {
-      name: args.name,
-    };
-    
-    // If canvasSettings exists, filter out the snapToGrid property
-    if (args.canvasSettings) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { snapToGrid, ...validCanvasSettings } = args.canvasSettings;
-      
-      // Add filtered canvasSettings to the convex args
-      Object.assign(convexArgs, { canvasSettings: validCanvasSettings });
-    }
-    
-    console.log('Creating project in Convex with args:', convexArgs);
-    
-    // Call the Convex mutation and return the result
-    const projectId = await createProjectMutation(convexArgs);
-    console.log('Convex returned project ID:', projectId);
-    
-    return projectId;
+  // Get all projects from local storage
+  const getProjects = () => {
+    if (typeof window === 'undefined') return [];
+    return JSON.parse(localStorage.getItem('flowcanvas_projects') || '[]');
   };
   
-  // Update a project
-  const updateProjectMutation = useMutation(api.projects.updateProject);
-  
-  const updateProject = async (args: UpdateProjectRequest) => {
-    const convexArgs: {
-      projectId: Id<"projects">;
-      update: Omit<UpdateProjectRequest['update'], 'canvasSettings'> & {
-        canvasSettings?: Omit<NonNullable<UpdateProjectRequest['update']['canvasSettings']>, 'snapToGrid'>;
-      };
-    } = {
-      projectId: args.projectId,
-      update: { ...args.update }
+  // Create a new project
+  const createProject = (name: string) => {
+    if (typeof window === 'undefined') return null;
+    
+    const id = `project_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+    const project = {
+      id,
+      name,
+      updatedAt: Date.now(),
     };
     
-    // If canvasSettings exists in the update, filter out the snapToGrid property
-    if (convexArgs.update.canvasSettings) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const { snapToGrid, ...validCanvasSettings } = convexArgs.update.canvasSettings;
-      convexArgs.update.canvasSettings = validCanvasSettings;
-    }
+    const projects = getProjects();
+    projects.push(project);
+    localStorage.setItem('flowcanvas_projects', JSON.stringify(projects));
     
-    return await updateProjectMutation(convexArgs);
+    return id;
+  };
+  
+  // Get a project by ID
+  const getProject = (id: string) => {
+    if (typeof window === 'undefined') return null;
+    
+    const projectData = localStorage.getItem(`flowcanvas_project_${id}`);
+    return projectData ? JSON.parse(projectData) : null;
   };
   
   // Delete a project
-  const deleteProjectMutation = useMutation(api.projects.deleteProject);
-  
-  const deleteProject = async (args: DeleteProjectRequest) => {
-    return await deleteProjectMutation(args);
+  const deleteProject = (id: string) => {
+    if (typeof window === 'undefined') return;
+    
+    // Remove from projects list
+    const projects = getProjects();
+    const index = projects.findIndex((p: {id: string}) => p.id === id);
+    
+    if (index >= 0) {
+      projects.splice(index, 1);
+      localStorage.setItem('flowcanvas_projects', JSON.stringify(projects));
+    }
+    
+    // Remove project data
+    localStorage.removeItem(`flowcanvas_project_${id}`);
+    
+    // Update recent projects
+    const recentProjects = JSON.parse(localStorage.getItem('flowcanvas_recent_projects') || '[]');
+    const recentIndex = recentProjects.indexOf(id);
+    
+    if (recentIndex >= 0) {
+      recentProjects.splice(recentIndex, 1);
+      localStorage.setItem('flowcanvas_recent_projects', JSON.stringify(recentProjects));
+    }
   };
   
   return {
-    projects,
+    projects: getProjects(),
     createProject,
-    updateProject,
+    getProject,
     deleteProject,
+    isLoading: false,
   };
 } 

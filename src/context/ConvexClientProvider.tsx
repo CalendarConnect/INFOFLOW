@@ -1,20 +1,11 @@
 'use client';
 
-import { ConvexProvider, ConvexReactClient } from "convex/react";
-import { ReactNode } from "react";
-
-// Create a Convex client using the URL from environment variable
-const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
-const convex = new ConvexReactClient(convexUrl!);
-
+// Modified to remove Convex dependency
 export default function ConvexClientProvider({
   children,
 }: {
-  children: ReactNode;
+  children: React.ReactNode;
 }) {
-  return (
-    <ConvexProvider client={convex}>
-      {children}
-    </ConvexProvider>
-  );
+  // Simply render children without Convex provider
+  return <>{children}</>;
 } 

@@ -1,19 +1,34 @@
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../../convex/_generated/api";
+// Replaced Convex implementation with local storage
 
 export function useUserSettings() {
-  // Get user settings
-  const settings = useQuery(api.userSettings.getUserSettings);
+  // Get recent projects from local storage
+  const getRecentProjects = () => {
+    if (typeof window === 'undefined') return [];
+    return JSON.parse(localStorage.getItem('flowcanvas_recent_projects') || '[]');
+  };
   
-  // Update user settings
-  const updateSettings = useMutation(api.userSettings.updateUserSettings);
-  
-  // Add a project to recent list
-  const addRecentProject = useMutation(api.userSettings.addRecentProject);
+  // Add a project to recent projects
+  const addRecentProject = (projectId: string) => {
+    if (typeof window === 'undefined') return;
+    
+    const recentProjects = JSON.parse(localStorage.getItem('flowcanvas_recent_projects') || '[]');
+    const index = recentProjects.indexOf(projectId);
+    
+    // Remove if exists
+    if (index >= 0) {
+      recentProjects.splice(index, 1);
+    }
+    
+    // Add to beginning
+    recentProjects.unshift(projectId);
+    
+    // Keep only the most recent 5
+    localStorage.setItem('flowcanvas_recent_projects', JSON.stringify(recentProjects.slice(0, 5)));
+  };
   
   return {
-    settings,
-    updateSettings,
-    addRecentProject
+    recentProjects: getRecentProjects(),
+    addRecentProject,
+    isLoading: false,
   };
 } 
