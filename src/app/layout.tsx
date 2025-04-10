@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ConvexClientProvider from "@/context/ConvexClientProvider";
 import { ThemeProvider } from "@/context/ThemeProvider";
 import { AdsenseInitializer } from "@/components/ads/AdsenseInitializer";
 import Script from "next/script";
@@ -40,12 +39,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ConvexClientProvider>
-          <ThemeProvider>
-            <AdsenseInitializer />
-            {children}
-          </ThemeProvider>
-        </ConvexClientProvider>
+        <ThemeProvider>
+          <AdsenseInitializer />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

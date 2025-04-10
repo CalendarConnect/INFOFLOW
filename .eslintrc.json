@@ -14,6 +14,6 @@
         // Disable type checks for drag and drop handlers
         "@typescript-eslint/no-explicit-any": "warn"
       }
-    }
+  }
   ]
 } 
