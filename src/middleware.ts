@@ -2,15 +2,12 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
-  const isAuthenticated = request.cookies.get('auth')?.value === 'true';
-  const isLoginPage = request.nextUrl.pathname === '/login';
+  // Check current route
+  const path = request.nextUrl.pathname;
   
-  if (!isAuthenticated && !isLoginPage) {
-    return NextResponse.redirect(new URL('/login', request.url));
-  }
-  
-  if (isAuthenticated && isLoginPage) {
-    return NextResponse.redirect(new URL('/', request.url));
+  // Redirect root to editor
+  if (path === '/') {
+    return NextResponse.redirect(new URL('/editor', request.url));
   }
   
   return NextResponse.next();

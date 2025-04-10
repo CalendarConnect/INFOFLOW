@@ -2,20 +2,16 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../convex/_generated/api";
 
 export function useAssets() {
-  // List all assets or filter by type
-  const listAssets = (type?: string) => useQuery(api.assets.listAssets, { type });
-  
-  // Generate upload URL
+  // These hooks are called directly inside the hook function
+  const allAssets = useQuery(api.assets.listAssets, { type: undefined });
   const generateUploadUrl = useMutation(api.assets.generateUploadUrl);
-  
-  // Create a new asset
   const createAsset = useMutation(api.assets.createAsset);
-  
-  // Delete an asset
   const deleteAsset = useMutation(api.assets.deleteAsset);
   
+  // Return the query results and a function to filter assets
   return {
-    listAssets,
+    assets: allAssets,
+    filterAssetsByType: (type: string) => allAssets?.filter(asset => asset.type === type) || [],
     generateUploadUrl,
     createAsset,
     deleteAsset

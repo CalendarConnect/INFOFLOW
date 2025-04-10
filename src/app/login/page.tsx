@@ -22,17 +22,22 @@ export default function LoginPage() {
     e.preventDefault();
     setError('');
     setIsLoading(true);
+    console.log('Login attempt with:', { username, password });
 
     try {
       const isSuccessful = login(username, password);
+      console.log('Login successful:', isSuccessful);
+      
       if (isSuccessful) {
-        router.push('/dashboard');
+        console.log('Redirecting to editor...');
+        router.push('/editor');
       } else {
+        console.log('Login failed: Invalid credentials');
         setError('Invalid username or password');
       }
     } catch (err) {
+      console.error('Login error:', err);
       setError('An unexpected error occurred. Please try again.');
-      console.error(err);
     } finally {
       setIsLoading(false);
     }
@@ -67,12 +72,12 @@ export default function LoginPage() {
         </div>
 
         <Card className="border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle>Log in to your account</CardTitle>
-            <CardDescription>Enter your credentials to access your flows</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit}>
+            <CardHeader>
+              <CardTitle>Log in to your account</CardTitle>
+              <CardDescription>Enter your credentials to access your flows</CardDescription>
+            </CardHeader>
+            <CardContent>
               {error && (
                 <Alert variant="destructive" className="mb-4">
                   <ExclamationTriangleIcon className="h-4 w-4" />
@@ -102,17 +107,17 @@ export default function LoginPage() {
                   />
                 </div>
               </div>
-            </form>
-          </CardContent>
-          <CardFooter>
-            <Button 
-              className="w-full" 
-              onClick={handleSubmit} 
-              disabled={isLoading}
-            >
-              {isLoading ? 'Logging in...' : 'Log in'}
-            </Button>
-          </CardFooter>
+            </CardContent>
+            <CardFooter>
+              <Button 
+                type="submit"
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading ? 'Logging in...' : 'Log in'}
+              </Button>
+            </CardFooter>
+          </form>
         </Card>
         
         <div className="mt-4 text-center text-sm text-gray-500">

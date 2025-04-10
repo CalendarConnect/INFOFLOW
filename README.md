@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FlowCanvas
+
+FlowCanvas is a web-based tool for creating visual automation flows. Users can design node-based workflows by connecting different service nodes (WhatsApp, Email, ChatGPT, etc.) to create visual representations of their automation processes.
+
+## Features
+
+### Canvas Management
+- Responsive canvas with pan and zoom functionality
+- Customizable canvas grid and background
+- Minimap navigation
+- Node selection and manipulation
+
+### Node System
+- Pre-defined node types with customizable styling
+- Node color customization
+- Node duplication and deletion
+- Text labels and emoji icons
+- Four connection handles per node (top, right, bottom, left)
+
+### Connection System
+- Customizable connection styles
+- Connection animations
+- Connection labels
+- Directional flow indicators
+
+### Animation Features
+- Animated dots traveling along connection paths with:
+  - Customizable dot size and color
+  - Adjustable animation speed
+  - Seamless looping
+- Node glow/pulse animations with:
+  - Customizable glow color
+  - Adjustable intensity
+  - Smooth pulse effect
+
+## Tech Stack
+
+- **Frontend**: Next.js 14, React 18, TypeScript
+- **Canvas**: ReactFlow for node-based diagrams
+- **State Management**: Zustand
+- **Styling**: Tailwind CSS, ShadCN UI
+- **Animations**: Framer Motion
+- **Database**: Convex
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Run the development server:
+   ```bash
+   npm run dev
+   ```
+4. Open [http://localhost:3000](http://localhost:3000) with your browser
+5. Login with username: `admin` and password: `admin`
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Usage
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Animation Controls
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+#### Edge Animations
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Select an edge by clicking on it
+2. In the properties panel (right sidebar), go to the "Edge" tab
+3. Toggle "Show Animated Dot" to enable the flowing dot animation
+4. Customize the dot with the following options:
+   - Dot Size: Adjust the size of the animated dot
+   - Dot Color: Change the color of the dot
+   - Animation Speed: Control how fast the dot travels along the path
 
-## Learn More
+#### Node Glow Effect
 
-To learn more about Next.js, take a look at the following resources:
+1. Select a node by clicking on it
+2. In the properties panel, go to the "Node" tab
+3. Scroll down to the "Glow Effect" section
+4. Toggle "Enable Glow" to activate the pulsing glow effect
+5. Customize the glow with:
+   - Glow Color: Change the color of the glow effect
+   - Intensity: Adjust how strong the glow appears
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## License
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT

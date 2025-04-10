@@ -110,7 +110,7 @@ export const listProjects = query({
     return await ctx.db
       .query("projects")
       .filter(q => q.eq(q.field("ownerId"), userId))
-      .order("desc", q => q.field("updatedAt"))
+      .order("desc")
       .collect();
   },
 }); 

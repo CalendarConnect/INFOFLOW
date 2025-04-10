@@ -16,12 +16,14 @@ interface CanvasState {
   isPanelOpen: boolean;
   isGridVisible: boolean;
   isMinimapVisible: boolean;
+  isAnimationActive: boolean;
   // Actions
   setViewport: (viewport: Viewport) => void;
   updateCanvasSettings: (settings: Partial<CanvasSettings>) => void;
   togglePanel: () => void;
   toggleGrid: () => void;
   toggleMinimap: () => void;
+  toggleAnimation: () => void;
   resetView: () => void;
 }
 
@@ -30,14 +32,15 @@ export const useCanvasStore = create<CanvasState>((set) => ({
   canvasSettings: {
     width: 1920,
     height: 1080,
-    background: '#f8f8f8',
+    background: '#000000',
     grid: true,
     gridSize: 20,
-    snapToGrid: false,
+    snapToGrid: true,
   },
   isPanelOpen: true,
   isGridVisible: true,
   isMinimapVisible: true,
+  isAnimationActive: true,
   
   // Actions
   setViewport: (viewport) => set({ viewport }),
@@ -59,6 +62,8 @@ export const useCanvasStore = create<CanvasState>((set) => ({
     })),
   
   toggleMinimap: () => set((state) => ({ isMinimapVisible: !state.isMinimapVisible })),
+  
+  toggleAnimation: () => set((state) => ({ isAnimationActive: !state.isAnimationActive })),
   
   resetView: () => set({ viewport: { x: 0, y: 0, zoom: 1 } }),
 })); 

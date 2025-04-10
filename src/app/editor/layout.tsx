@@ -1,6 +1,5 @@
 'use client';
 
-import { AuthGuard } from '@/components/auth/AuthGuard';
 import { AppShell } from '@/components/layout/AppShell';
 
 export default function EditorLayout({
@@ -9,8 +8,6 @@ export default function EditorLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AuthGuard>
-      <AppShell>{children}</AppShell>
-    </AuthGuard>
+    <AppShell>{children}</AppShell>
   );
 } 

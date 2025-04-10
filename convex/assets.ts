@@ -8,9 +8,7 @@ export const generateUploadUrl = mutation({
     contentType: v.string(),
   },
   handler: async (ctx, args) => {
-    return await ctx.storage.generateUploadUrl({
-      contentType: args.contentType,
-    });
+    return await ctx.storage.generateUploadUrl();
   },
 });
 
@@ -54,7 +52,7 @@ export const listAssets = query({
     }
     
     return await assetsQuery
-      .order("desc", q => q.field("createdAt"))
+      .order("desc")
       .collect();
   },
 });

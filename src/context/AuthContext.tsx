@@ -1,4 +1,7 @@
+'use client';
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { setCookie, getCookie, deleteCookie } from 'cookies-next';
 
 type AuthContextType = {
   isAuthenticated: boolean;
@@ -13,7 +16,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   useEffect(() => {
     // Check for existing auth on mount
-    const auth = localStorage.getItem('auth');
+    const auth = getCookie('auth');
     if (auth === 'true') {
       setIsAuthenticated(true);
     }
@@ -22,6 +25,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = (username: string, password: string) => {
     if (username === 'admin' && password === 'admin') {
       setIsAuthenticated(true);
+      // Set both cookie and localStorage for compatibility
+      setCookie('auth', 'true', { maxAge: 60 * 60 * 24 * 7 }); // 7 days
       localStorage.setItem('auth', 'true');
       return true;
     }
@@ -30,6 +35,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   
   const logout = () => {
     setIsAuthenticated(false);
+    deleteCookie('auth');
     localStorage.removeItem('auth');
   };
   

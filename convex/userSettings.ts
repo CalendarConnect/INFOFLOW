@@ -31,8 +31,10 @@ export const getUserSettings = query({
       recentProjects: [],
     };
     
-    const settingsId = await ctx.db.insert("userSettings", defaultSettings);
-    return await ctx.db.get(settingsId);
+    // Fix: Create a new query function to create the settings if none exist
+    // Since insert is not allowed in a query function, we should handle this differently
+    // For now, just return the default settings without persisting
+    return defaultSettings;
   },
 });
 

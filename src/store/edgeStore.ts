@@ -8,11 +8,63 @@ import {
 } from 'reactflow';
 import { v4 as uuidv4 } from 'uuid';
 
+export type LineStyle = 'solid' | 'dashed' | 'dotted';
+
+export type EdgeAnimationType = 
+  | 'none' 
+  | 'flow' 
+  | 'pulse'
+  | 'dash'
+  | 'dots'
+  | 'rainbow'
+  | 'laser'
+  | 'traffic'
+  | 'wave'
+  | 'glow';
+
+export type DotAnimationType = 
+  | 'standard' 
+  | 'pulse' 
+  | 'fadeIn' 
+  | 'grow' 
+  | 'bounce' 
+  | 'accelerate'
+  | 'traffic';
+
+export type EdgePattern = 
+  | 'solid'
+  | 'dashed'
+  | 'dotted'
+  | 'double'
+  | 'zigzag'
+  | 'gradient';
+
 export interface EdgeData {
   label?: string;
   animated?: boolean;
   color?: string;
   thickness?: number;
+  showDot?: boolean;
+  dotSize?: number;
+  dotColor?: string;
+  animationSpeed?: number;
+  lineStyle?: LineStyle;
+  animationType?: EdgeAnimationType;
+  dotAnimationType?: DotAnimationType;
+  dotCount?: number;
+  dotSpacing?: number;
+  startArrow?: boolean;
+  endArrow?: boolean;
+  bidirectional?: boolean;
+  labelBgColor?: string;
+  labelTextColor?: string;
+  pattern?: EdgePattern;
+  curvature?: number;
+  opacity?: number;
+  shadowColor?: string;
+  shadowBlur?: number;
+  gradientColors?: string[];
+  reverseAnimation?: boolean;
 }
 
 interface EdgeState {
@@ -28,6 +80,29 @@ interface EdgeState {
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (connection: Connection) => void;
 }
+
+// Default edge properties - used for consistent edge creation
+const DEFAULT_EDGE_DATA: EdgeData = {
+  animated: false,
+  animationType: 'none',
+  pattern: 'solid',
+  lineStyle: 'solid',
+  thickness: 1,
+  color: '#ffffff',
+  showDot: true,
+  dotCount: 1,
+  dotSize: 7,
+  dotColor: '#ffffff',
+  dotAnimationType: 'standard',
+  animationSpeed: 2,
+  endArrow: false,
+  startArrow: false,
+  bidirectional: false,
+  opacity: 1,
+  curvature: 0.5,
+  reverseAnimation: false,
+  shadowBlur: 0
+};
 
 export const useEdgeStore = create<EdgeState>((set, get) => ({
   edges: [],
@@ -46,7 +121,7 @@ export const useEdgeStore = create<EdgeState>((set, get) => ({
       sourceHandle: connection.sourceHandle,
       targetHandle: connection.targetHandle,
       data: {
-        animated: true,
+        ...DEFAULT_EDGE_DATA,
         ...data,
       },
     };
@@ -62,7 +137,13 @@ export const useEdgeStore = create<EdgeState>((set, get) => ({
     set((state) => ({
       edges: state.edges.map((edge) =>
         edge.id === edgeId
-          ? { ...edge, data: { ...edge.data, ...data } }
+          ? {
+              ...edge,
+              data: {
+                ...edge.data,
+                ...data,
+              },
+            }
           : edge
       ),
     }));
@@ -110,14 +191,19 @@ export const useEdgeStore = create<EdgeState>((set, get) => ({
     }
   },
   
-  // Handle new connections from ReactFlow
+  // Handle connection
   onConnect: (connection) => {
+    const newEdge: Edge<EdgeData> = {
+      id: uuidv4(),
+      ...connection,
+      source: connection.source!,
+      target: connection.target!,
+      type: 'custom',
+      data: DEFAULT_EDGE_DATA,
+    };
+    
     set((state) => ({
-      edges: addEdge({
-        ...connection,
-        type: 'custom',
-        data: { animated: true },
-      }, state.edges),
+      edges: addEdge(newEdge, state.edges),
     }));
   },
 })); 
