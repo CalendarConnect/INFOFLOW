@@ -5,6 +5,7 @@ export const INTEGRATION_ICONS = [
   { id: 'linkedin', name: 'LinkedIn', path: '/linkedin.svg' },
   { id: 'facebook', name: 'Facebook', path: '/facebook-trigger.svg' },
   { id: 'twitter', name: 'Twitter', path: '/twitter.svg' },
+  { id: 'instagram', name: 'Instagram', path: '/instagram.svg' },
   { id: 'discord', name: 'Discord', path: '/discord.svg' },
   { id: 'slack', name: 'Slack', path: '/slack.svg' },
   { id: 'telegram', name: 'Telegram', path: '/telegram.svg' },
