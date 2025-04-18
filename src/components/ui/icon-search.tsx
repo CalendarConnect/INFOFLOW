@@ -7,6 +7,14 @@ import { Button } from './button';
 import { ScrollArea } from './scroll-area';
 import { cn } from '@/lib/utils';
 import { Search } from 'lucide-react';
+import { 
+  INTEGRATION_ICONS, 
+  INTEGRATION_CATEGORIES, 
+  getAllIntegrationIconIds, 
+  searchIntegrationIcons, 
+  getIntegrationIconsByCategory 
+} from '@/lib/integrationIcons';
+import { IntegrationIcon } from './integration-icon';
 
 // Popular icon collections with friendly names
 const POPULAR_COLLECTIONS = [
@@ -26,6 +34,7 @@ const POPULAR_COLLECTIONS = [
   { id: 'bx', name: 'Box Icons' },
   { id: 'simple-icons', name: 'Simple Icons' },
   { id: 'logos', name: 'Logos' },
+  { id: 'integrations', name: 'Integrations' },
 ];
 
 // Common categories of icons
@@ -39,6 +48,7 @@ const ICON_CATEGORIES = {
   'Automation': ['robot', 'api', 'code', 'database', 'server', 'cloud', 'function', 'webhook', 'workflow', 'process', 'integration', 'connection', 'flow', 'pipeline', 'trigger', 'action', 'automation', 'bot', 'scheduler', 'cron', 'task', 'sync', 'update'],
   'Business': ['chart', 'graph', 'analytics', 'dashboard', 'presentation', 'calculator', 'briefcase', 'money', 'credit-card', 'wallet', 'bank', 'building', 'store', 'shop', 'cart', 'bag', 'tag', 'receipt', 'invoice', 'contract', 'signature', 'certificate', 'award', 'trophy'],
   'Logos': ['android', 'apple', 'windows', 'linux', 'aws', 'azure', 'google-cloud', 'docker', 'kubernetes', 'github', 'gitlab', 'bitbucket', 'npm', 'node', 'react', 'vue', 'angular', 'svelte', 'next', 'nuxt', 'tailwind', 'bootstrap', 'sass', 'typescript', 'javascript', 'python', 'java', 'go', 'rust', 'c', 'php', 'mysql', 'postgresql', 'mongodb', 'redis', 'graphql', 'firebase', 'stripe', 'paypal', 'visa', 'mastercard', 'amex'],
+  'Integrations': [...getAllIntegrationIconIds()],
 };
 
 // Most popular icons to show initially
@@ -73,6 +83,20 @@ const POPULAR_ICONS = [
   'simple-icons:next-dot-js',
 ];
 
+// Popular integration icons to show initially
+const POPULAR_INTEGRATION_ICONS = [
+  'shopify',
+  'stripe',
+  'github',
+  'slack',
+  'discord',
+  'notion',
+  'linkedin',
+  'salesforce',
+  'gmail',
+  'openai',
+];
+
 export interface IconPickerProps {
   onSelect: (icon: string) => void;
   value?: string;
@@ -84,9 +108,15 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedCollection, setSelectedCollection] = useState<string>('');
   const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [integrationSearchResults, setIntegrationSearchResults] = useState<string[]>([]);
   const [recentIcons, setRecentIcons] = useState<string[]>([]);
+  const [recentIntegrationIcons, setRecentIntegrationIcons] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [selectedIntegrationCategory, setSelectedIntegrationCategory] = useState<string | null>(null);
   const searchDebounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Determine if we're looking at integrations
+  const isIntegrationMode = selectedCollection === 'integrations';
 
   // Load recent icons from localStorage
   useEffect(() => {
@@ -98,10 +128,28 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
         console.error('Failed to parse recent icons', e);
       }
     }
+
+    const savedIntegrations = localStorage.getItem('recentIntegrationIcons');
+    if (savedIntegrations) {
+      try {
+        setRecentIntegrationIcons(JSON.parse(savedIntegrations).slice(0, 12));
+      } catch (e) {
+        console.error('Failed to parse recent integration icons', e);
+      }
+    }
   }, []);
 
   // Save icon to recent icons
   const addToRecentIcons = (icon: string) => {
+    // For integration icons
+    if (!icon.includes(':')) {
+      const updated = [icon, ...recentIntegrationIcons.filter(i => i !== icon)].slice(0, 12);
+      setRecentIntegrationIcons(updated);
+      localStorage.setItem('recentIntegrationIcons', JSON.stringify(updated));
+      return;
+    }
+    
+    // For regular icons
     const updated = [icon, ...recentIcons.filter(i => i !== icon)].slice(0, 12);
     setRecentIcons(updated);
     localStorage.setItem('recentIcons', JSON.stringify(updated));
@@ -115,24 +163,32 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
 
     if (!query) {
       setSearchResults([]);
+      setIntegrationSearchResults([]);
       return;
     }
 
     setIsLoading(true);
     searchDebounceRef.current = setTimeout(() => {
-      // This is a simplified search. In a real implementation,
-      // you'd probably want to use the Iconify API or a comprehensive local index
+      // Integration search
+      if (isIntegrationMode) {
+        setIntegrationSearchResults(searchIntegrationIcons(query));
+        setIsLoading(false);
+        return;
+      }
+      
+      // Regular icon search
       const searchTerms = query.toLowerCase().split(' ');
       
       let results: string[] = [];
       
       // Search in the current collection or all collections if none selected
-      POPULAR_COLLECTIONS.forEach(collection => {
+      POPULAR_COLLECTIONS.filter(c => c.id !== 'integrations').forEach(collection => {
         if (selectedCollection && collection.id !== selectedCollection) return;
         
         // For each category
         Object.entries(ICON_CATEGORIES).forEach(([category, keywords]) => {
           if (selectedCategory && category !== selectedCategory) return;
+          if (category === 'Integrations') return; // Skip integrations for regular search
           
           // Filter icons that match all search terms
           const matchingIcons = keywords.filter(icon => 
@@ -153,7 +209,7 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
         clearTimeout(searchDebounceRef.current);
       }
     };
-  }, [query, selectedCategory, selectedCollection]);
+  }, [query, selectedCategory, selectedCollection, isIntegrationMode, selectedIntegrationCategory]);
 
   // Handle icon selection
   const handleSelectIcon = (iconName: string) => {
@@ -163,14 +219,37 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
 
   // Get display icons based on current state
   const getDisplayIcons = () => {
+    // Integration icons mode
+    if (isIntegrationMode) {
+      if (query.length > 0) {
+        return integrationSearchResults;
+      }
+      
+      if (selectedIntegrationCategory) {
+        return getIntegrationIconsByCategory(selectedIntegrationCategory);
+      }
+      
+      if (recentIntegrationIcons.length > 0) {
+        return recentIntegrationIcons;
+      }
+      
+      return POPULAR_INTEGRATION_ICONS;
+    }
+    
+    // Regular icons mode
     if (query.length > 0) {
       return searchResults;
     }
     
     if (selectedCategory) {
-      return ICON_CATEGORIES[selectedCategory as keyof typeof ICON_CATEGORIES].map(icon => 
-        `${selectedCollection || 'lucide'}:${icon}`
-      );
+      if (selectedCategory === 'Integrations') {
+        setSelectedCollection('integrations');
+        return [];
+      }
+      
+      return ICON_CATEGORIES[selectedCategory as keyof typeof ICON_CATEGORIES]
+        .filter(icon => selectedCategory !== 'Integrations')
+        .map(icon => `${selectedCollection || 'lucide'}:${icon}`);
     }
     
     if (recentIcons.length > 0) {
@@ -185,10 +264,21 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
   return (
     <div className={cn("w-full space-y-4", className)}>
       <div className="space-y-3">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium">
+            {isIntegrationMode ? "Integration Icons" : "UI Icons"}
+          </h3>
+          {isIntegrationMode && (
+            <div className="text-xs text-muted-foreground">
+              Showing platform integrations
+            </div>
+          )}
+        </div>
+        
         <div className="relative">
           <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search icons..."
+            placeholder={isIntegrationMode ? "Search integrations..." : "Search icons..."}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="pl-8 w-full"
@@ -199,17 +289,24 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
           <Button 
             variant={!selectedCollection ? "default" : "outline"} 
             size="sm"
-            onClick={() => setSelectedCollection('')}
+            onClick={() => {
+              setSelectedCollection('');
+              setSelectedIntegrationCategory(null);
+            }}
             className="text-xs h-7"
           >
             All
           </Button>
-          {POPULAR_COLLECTIONS.slice(0, 6).map(collection => (
+          {POPULAR_COLLECTIONS.map(collection => (
             <Button
               key={collection.id}
               variant={selectedCollection === collection.id ? "default" : "outline"}
               size="sm"
-              onClick={() => setSelectedCollection(collection.id)}
+              onClick={() => {
+                setSelectedCollection(collection.id);
+                setSelectedCategory(null);
+                setSelectedIntegrationCategory(null);
+              }}
               className="text-xs h-7"
             >
               {collection.name}
@@ -217,7 +314,7 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
           ))}
         </div>
         
-        {query.length === 0 && (
+        {query.length === 0 && !isIntegrationMode && (
           <div className="flex flex-wrap gap-1">
             {Object.keys(ICON_CATEGORIES).map(category => (
               <Button
@@ -225,6 +322,22 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
                 variant={selectedCategory === category ? "default" : "outline"}
                 size="sm"
                 onClick={() => setSelectedCategory(selectedCategory === category ? null : category)}
+                className="text-xs h-7"
+              >
+                {category}
+              </Button>
+            ))}
+          </div>
+        )}
+        
+        {query.length === 0 && isIntegrationMode && (
+          <div className="flex flex-wrap gap-1">
+            {Object.keys(INTEGRATION_CATEGORIES).map(category => (
+              <Button
+                key={category}
+                variant={selectedIntegrationCategory === category ? "default" : "outline"}
+                size="sm"
+                onClick={() => setSelectedIntegrationCategory(selectedIntegrationCategory === category ? null : category)}
                 className="text-xs h-7"
               >
                 {category}
@@ -244,14 +357,27 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
             <>
               {displayIcons.length > 0 ? (
                 <div className="grid grid-cols-6 gap-3">
-                  {displayIcons.map((iconName) => (
-                    <IconButton
-                      key={iconName}
-                      iconName={iconName}
-                      onClick={() => handleSelectIcon(iconName)}
-                      isSelected={value === iconName}
-                    />
-                  ))}
+                  {isIntegrationMode ? (
+                    // Integration icons
+                    displayIcons.map((iconId) => (
+                      <IntegrationIconButton
+                        key={iconId}
+                        iconId={iconId}
+                        onClick={() => handleSelectIcon(iconId)}
+                        isSelected={value === iconId}
+                      />
+                    ))
+                  ) : (
+                    // Regular icons
+                    displayIcons.map((iconName) => (
+                      <IconButton
+                        key={iconName}
+                        iconName={iconName}
+                        onClick={() => handleSelectIcon(iconName)}
+                        isSelected={value === iconName}
+                      />
+                    ))
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-full text-center p-4">
@@ -264,7 +390,8 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
                 </div>
               )}
               
-              {query.length === 0 && !selectedCategory && recentIcons.length > 0 && (
+              {/* Show recent icons */}
+              {query.length === 0 && !selectedCategory && !selectedIntegrationCategory && !isIntegrationMode && recentIcons.length > 0 && (
                 <div className="mt-4">
                   <div className="text-xs font-medium text-muted-foreground mb-2">Recently Used</div>
                   <div className="grid grid-cols-6 gap-3">
@@ -274,6 +401,23 @@ export function IconPicker({ onSelect, value, className }: IconPickerProps) {
                         iconName={iconName}
                         onClick={() => handleSelectIcon(iconName)}
                         isSelected={value === iconName}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Show recent integration icons */}
+              {query.length === 0 && !selectedIntegrationCategory && isIntegrationMode && recentIntegrationIcons.length > 0 && (
+                <div className="mt-4">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">Recently Used</div>
+                  <div className="grid grid-cols-6 gap-3">
+                    {recentIntegrationIcons.map((iconId) => (
+                      <IntegrationIconButton
+                        key={iconId}
+                        iconId={iconId}
+                        onClick={() => handleSelectIcon(iconId)}
+                        isSelected={value === iconId}
                       />
                     ))}
                   </div>
@@ -323,6 +467,34 @@ function IconButton({ iconName, onClick, isSelected }: IconButtonProps) {
         icon={iconName} 
         className="h-5 w-5" 
         onError={() => setError(true)}
+      />
+    </Button>
+  );
+}
+
+interface IntegrationIconButtonProps {
+  iconId: string;
+  onClick: () => void;
+  isSelected: boolean;
+}
+
+function IntegrationIconButton({ iconId, onClick, isSelected }: IntegrationIconButtonProps) {
+  return (
+    <Button
+      variant={isSelected ? "default" : "outline"}
+      size="sm"
+      onClick={onClick}
+      className={cn(
+        "h-10 w-10 p-0 flex items-center justify-center",
+        isSelected && "ring-2 ring-primary ring-offset-1"
+      )}
+      title={
+        INTEGRATION_ICONS.find(icon => icon.id === iconId)?.name || iconId
+      }
+    >
+      <IntegrationIcon 
+        iconId={iconId}
+        size={20}
       />
     </Button>
   );

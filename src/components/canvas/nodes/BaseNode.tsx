@@ -7,6 +7,8 @@ import { cn } from '@/lib/utils';
 import { useNodeStore } from '@/store/nodeStore';
 import { Icon } from '@iconify/react';
 import { useCanvasStore } from '@/store/canvasStore';
+import { IntegrationIcon } from '@/components/ui/integration-icon';
+import { INTEGRATION_ICONS } from '@/lib/integrationIcons';
 
 export type NodeShape = 'rectangle' | 'rounded' | 'pill' | 'diamond' | 'hexagon' | 'circle' | 'parallelogram';
 
@@ -283,6 +285,11 @@ const getIconPositionStyles = (position: string) => {
   }
 };
 
+// Add this helper function to determine if an icon is an integration icon
+const isIntegrationIcon = (icon: string): boolean => {
+  return !icon.includes(':') && INTEGRATION_ICONS.some(i => i.id === icon);
+};
+
 const BaseNode = memo(({ id, data, selected, isConnectable }: NodeProps<BaseNodeData>) => {
   const { updateNode, selectedNodeIds } = useNodeStore();
   // Get animation state from canvas store
@@ -407,7 +414,12 @@ const BaseNode = memo(({ id, data, selected, isConnectable }: NodeProps<BaseNode
         >
           {data.icon && (
             <div className={cn("flex-shrink-0", getIconPositionStyles(iconPosition))}>
-              {data.icon.includes(':') ? (
+              {isIntegrationIcon(data.icon) ? (
+                <IntegrationIcon 
+                  iconId={data.icon} 
+                  size={iconSize}
+                />
+              ) : data.icon.includes(':') ? (
                 <Icon 
                   icon={data.icon} 
                   style={{ fontSize: `${iconSize}px` }} 

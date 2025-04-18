@@ -26,17 +26,40 @@ export interface NodeData {
   iconPosition?: 'left' | 'right' | 'top' | 'bottom' | 'center';
 }
 
+export interface HeaderNodeData {
+  text: string;
+  level: 'h1' | 'h2' | 'h3';
+  fontSize?: number;
+  fontWeight?: 'normal' | 'medium' | 'semibold' | 'bold';
+  fontFamily?: 'sans' | 'serif' | 'mono';
+  color?: string;
+  alignment?: 'left' | 'center' | 'right';
+  backgroundColor?: string;
+  opacity?: number;
+  shadow?: 'none' | 'sm' | 'md' | 'lg';
+  width?: number;
+}
+
+// Union type for all node data types
+export type AllNodeData = NodeData | HeaderNodeData;
+
+// Type guard to check if a node is a header node
+export function isHeaderNodeData(data: AllNodeData): data is HeaderNodeData {
+  return 'text' in data && 'level' in data;
+}
+
 interface NodeState {
-  nodes: Node<NodeData>[];
+  nodes: Node<AllNodeData>[];
   selectedNodeIds: string[];
   // Actions
-  setNodes: (nodes: Node<NodeData>[]) => void;
-  addNode: (nodeData: NodeData, position: XYPosition) => void;
-  updateNode: (nodeId: string, data: Partial<NodeData>) => void;
+  setNodes: (nodes: Node<AllNodeData>[]) => void;
+  addNode: (nodeData: AllNodeData, position: XYPosition) => void;
+  updateNode: (nodeId: string, data: Partial<AllNodeData>) => void;
   duplicateNode: (nodeId: string, offsetPosition?: XYPosition) => void;
   deleteNodes: (nodeIds: string[]) => void;
   setSelectedNodeIds: (nodeIds: string[]) => void;
   onNodesChange: (changes: NodeChange[]) => void;
+  addHeaderNode: (headerData: HeaderNodeData, position: XYPosition) => void;
 }
 
 export const useNodeStore = create<NodeState>((set, get) => ({
@@ -48,26 +71,41 @@ export const useNodeStore = create<NodeState>((set, get) => ({
   
   // Add a new node
   addNode: (nodeData, position) => {
-    const newNode: Node<NodeData> = {
+    // Determine the node type based on the data structure
+    const nodeType = isHeaderNodeData(nodeData) ? 'header' : 'custom';
+    
+    const newNode: Node<AllNodeData> = {
       id: uuidv4(),
-      type: 'custom',
+      type: nodeType,
+      position,
+      data: nodeData,
+    };
+    
+    set((state) => ({
+      nodes: [...state.nodes, newNode],
+      selectedNodeIds: [newNode.id],
+    }));
+  },
+  
+  // Helper method for adding header nodes specifically
+  addHeaderNode: (headerData, position) => {
+    const newNode: Node<HeaderNodeData> = {
+      id: uuidv4(),
+      type: 'header',
       position,
       data: {
-        ...nodeData,
-        width: nodeData.width || 180, // Default width
-        height: nodeData.height || 80, // Default height
-        color: nodeData.color || '#444444', // Changed to dark grey
-        shape: nodeData.shape || 'rounded', // Default shape
-        borderWidth: nodeData.borderWidth || 1, // Changed to thin border
-        borderStyle: nodeData.borderStyle || 'solid',
-        textColor: nodeData.textColor || '#ffffff', // Changed to white text
-        backgroundColor: nodeData.backgroundColor || '#222222', // Changed to blackish
-        opacity: nodeData.opacity !== undefined ? nodeData.opacity : 1,
-        shadow: nodeData.shadow || 'md',
-        animation: nodeData.animation || 'none',
-        animationDuration: nodeData.animationDuration || 2,
-        iconSize: nodeData.iconSize || 18,
-        iconPosition: nodeData.iconPosition || 'left',
+        // Default values
+        text: headerData.text || 'Header Text',
+        level: headerData.level || 'h1',
+        fontSize: headerData.fontSize,
+        fontWeight: headerData.fontWeight || 'semibold',
+        fontFamily: headerData.fontFamily || 'sans',
+        color: headerData.color || '#ffffff',
+        alignment: headerData.alignment || 'left',
+        backgroundColor: headerData.backgroundColor,
+        opacity: headerData.opacity !== undefined ? headerData.opacity : 1,
+        shadow: headerData.shadow || 'none',
+        width: headerData.width || 320,
       },
     };
     
@@ -95,7 +133,7 @@ export const useNodeStore = create<NodeState>((set, get) => ({
     
     if (!nodeToClone) return;
     
-    const newNode: Node<NodeData> = {
+    const newNode: Node<AllNodeData> = {
       id: uuidv4(),
       type: nodeToClone.type,
       position: {
@@ -125,7 +163,7 @@ export const useNodeStore = create<NodeState>((set, get) => ({
   // Handle node changes from ReactFlow
   onNodesChange: (changes) => {
     set((state) => ({
-      nodes: applyNodeChanges(changes, state.nodes) as Node<NodeData>[],
+      nodes: applyNodeChanges(changes, state.nodes) as Node<AllNodeData>[],
     }));
     
     // Update selected nodes

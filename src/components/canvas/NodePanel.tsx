@@ -30,6 +30,8 @@ import { NodeData, useNodeStore } from '@/store/nodeStore';
 import { Icon } from '@iconify/react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnimatePresence, motion } from 'framer-motion';
+import { IntegrationIcon } from '@/components/ui/integration-icon';
+import { INTEGRATION_ICONS } from '@/lib/integrationIcons';
 
 // Node category definitions with expanded categories and nodes
 const nodeCategories = [
@@ -507,6 +509,67 @@ const scrollStyles = `
   }
 `;
 
+// Add this function before the NodePanel component
+const isIntegrationIcon = (icon: string): boolean => {
+  return !icon.includes(':') && INTEGRATION_ICONS.some(i => i.id === icon);
+};
+
+// Helper function to render the correct icon type
+const renderIcon = (icon: string | undefined, size = 16, color?: string) => {
+  if (!icon) return null;
+  
+  // Check if it's an integration icon (doesn't have a prefix like 'lucide:')
+  if (isIntegrationIcon(icon)) {
+    return <IntegrationIcon iconId={icon} size={size} />;
+  }
+  
+  // Regular Iconify icon
+  if (icon.includes(':')) {
+    return <Icon icon={icon} style={{ fontSize: size, color }} />;
+  }
+  
+  // Plain text icon
+  return <span style={{ fontSize: size, color }}>{icon}</span>;
+};
+
+interface NodeItemProps {
+  node: CustomNodeData;
+  onClick: () => void;
+  onDragStart: (event: React.DragEvent<HTMLDivElement>) => void;
+  isDragging: boolean;
+}
+
+const NodeItem = ({ node, onClick, onDragStart, isDragging }: NodeItemProps) => {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 p-2 rounded-md cursor-grab transition-colors",
+        "bg-card border border-border hover:border-primary/50 hover:bg-accent",
+        isDragging && "border-primary bg-primary/5",
+      )}
+      draggable
+      onDragStart={onDragStart}
+      onClick={onClick}
+    >
+      <div 
+        className="flex-shrink-0 w-9 h-9 rounded-md flex items-center justify-center" 
+        style={{ backgroundColor: `${node.color}15` }}
+      >
+        {renderIcon(node.icon, 20, node.color)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-2">
+          <div className="font-medium text-sm truncate">{node.label}</div>
+          {node.isNew && (
+            <div className="text-[10px] px-1.5 py-0.5 bg-primary/10 text-primary rounded-full">New</div>
+          )}
+        </div>
+        <div className="text-xs text-muted-foreground truncate">{node.description}</div>
+      </div>
+    </div>
+  );
+};
+
 export function NodePanel({ className }: NodePanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedCategories, setExpandedCategories] = useState<string[]>([]);
@@ -688,39 +751,13 @@ export function NodePanel({ className }: NodePanelProps) {
                       <AccordionContent className="transition-all">
                         <div className="grid grid-cols-1 gap-1.5 p-1">
                           {category.nodes.map((node: CustomNodeData) => (
-                            <motion.div
+                            <NodeItem
                               key={node.id || `node-${Math.random().toString(36).substring(2)}`}
-                              initial={{ opacity: 0, y: 5 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ duration: 0.2 }}
-                              className="relative flex items-center p-2 rounded-md border border-border hover:bg-accent/50 hover:border-gray-300 dark:hover:border-gray-600 cursor-grab text-sm group"
-                              draggable
-                              onDragStart={onDragStartHandler(node)}
+                              node={node}
                               onClick={() => handleAddNode(node)}
-                            >
-                              <div 
-                                className="h-8 w-8 rounded-md flex items-center justify-center mr-2 transition-all group-hover:scale-110"
-                                style={{ 
-                                  backgroundColor: `${node.color}20`, 
-                                  color: node.color, 
-                                  boxShadow: `0 0 0 1px ${node.color}30` 
-                                }}
-                              >
-                                {typeof node.icon === 'string' && node.icon.includes(':') ? (
-                                  <Icon icon={node.icon} width={20} height={20} />
-                                ) : (
-                                  <span>{node.icon}</span>
-                                )}
-                              </div>
-                              <div className="flex-1">
-                                <div className="font-medium flex items-center">
-                                  {node.label}
-                                </div>
-                                <div className="text-xs text-muted-foreground line-clamp-1">
-                                  {node.description}
-                                </div>
-                              </div>
-                            </motion.div>
+                              onDragStart={onDragStartHandler(node)}
+                              isDragging={false}
+                            />
                           ))}
                         </div>
                       </AccordionContent>
@@ -755,50 +792,13 @@ export function NodePanel({ className }: NodePanelProps) {
                     <AccordionContent className="transition-all">
                       <div className="grid grid-cols-1 gap-1.5 p-1">
                         {category.nodes.map((node: CustomNodeData) => (
-                          <motion.div
+                          <NodeItem
                             key={node.id || `node-${Math.random().toString(36).substring(2)}`}
-                            initial={{ opacity: 0, y: 5 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="relative flex items-center p-2 rounded-md border border-border hover:bg-accent/50 hover:border-gray-300 dark:hover:border-gray-600 cursor-grab text-sm group"
-                            draggable
-                            onDragStart={onDragStartHandler(node)}
+                            node={node}
                             onClick={() => handleAddNode(node)}
-                          >
-                            <div 
-                              className="h-8 w-8 rounded-md flex items-center justify-center mr-2 transition-all group-hover:scale-110"
-                              style={{ 
-                                backgroundColor: `${node.color}20`, 
-                                color: node.color, 
-                                boxShadow: `0 0 0 1px ${node.color}30` 
-                              }}
-                            >
-                              {typeof node.icon === 'string' && node.icon.includes(':') ? (
-                                <Icon icon={node.icon} width={20} height={20} />
-                              ) : (
-                                <span>{node.icon}</span>
-                              )}
-                            </div>
-                            <div className="flex-1">
-                              <div className="font-medium flex items-center">
-                                {node.label}
-                              </div>
-                              <div className="text-xs text-muted-foreground line-clamp-1">
-                                {node.description}
-                              </div>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 opacity-0 group-hover:opacity-100 absolute right-1 top-1 transition-opacity"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleAddNode(node);
-                              }}
-                            >
-                              <Plus className="h-3 w-3" />
-                            </Button>
-                          </motion.div>
+                            onDragStart={onDragStartHandler(node)}
+                            isDragging={false}
+                          />
                         ))}
                       </div>
                     </AccordionContent>

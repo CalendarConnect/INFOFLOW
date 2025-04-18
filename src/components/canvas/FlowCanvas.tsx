@@ -11,12 +11,14 @@ import { useNodeStore } from '@/store/nodeStore';
 import { useEdgeStore } from '@/store/edgeStore';
 import { useCanvasStore } from '@/store/canvasStore';
 import CustomNode from './nodes/BaseNode';
+import HeaderNode from './nodes/HeaderNode';
 import CustomEdge from './edges/BaseEdge';
 
 // Define node types
 const nodeTypes = {
   base: CustomNode,
   custom: CustomNode,
+  header: HeaderNode,
 };
 
 // Define edge types

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useNodeStore } from '@/store/nodeStore';
+import { useNodeStore, isHeaderNodeData, NodeData } from '@/store/nodeStore';
 import { useEdgeStore } from '@/store/edgeStore';
 import { useCanvasStore } from '@/store/canvasStore';
 import { Button } from '@/components/ui/button';
@@ -26,13 +26,14 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { cn } from '@/lib/utils';
-import { Trash2, Copy, Search, RepeatIcon } from 'lucide-react';
+import { Trash2, Copy, Search, RepeatIcon, Heading1 } from 'lucide-react';
 import { ChromePicker, ColorResult } from 'react-color';
 import { IconPicker } from '@/components/ui/icon-search';
 import { NodeShape } from '@/store/nodeStore';
 import { EdgeAnimationType, EdgePattern, DotAnimationType } from '@/store/edgeStore';
 import { Icon } from '@iconify/react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { HeaderPanel } from './HeaderPanel';
 
 interface PropertiesPanelProps {
   className?: string;
@@ -171,7 +172,8 @@ export function PropertiesPanel({ className }: PropertiesPanelProps) {
   
   // Update local state when selection changes
   useEffect(() => {
-    if (selectedNode) {
+    if (selectedNode && !isHeaderNodeData(selectedNode.data)) {
+      // Only apply these properties if it's a regular node, not a header node
       setNodeName(selectedNode.data.label || '');
       setNodeIcon(selectedNode.data.icon || '');
       setNodeColor(selectedNode.data.color || '#3b82f6');
@@ -196,6 +198,9 @@ export function PropertiesPanel({ className }: PropertiesPanelProps) {
       
       // Automatically switch to the node tab when a node is selected
       setActiveTab('node');
+    } else if (selectedNode && isHeaderNodeData(selectedNode.data)) {
+      // If it's a header node, switch to the headers tab
+      setActiveTab('headers');
     }
   }, [selectedNode, nodeColor]);
   
@@ -745,959 +750,967 @@ export function PropertiesPanel({ className }: PropertiesPanelProps) {
   };
   
   return (
-    <div className={cn("w-full h-full flex flex-col bg-white dark:bg-gray-800 rounded-lg border border-border", className)}>
+    <div className={cn('h-full flex flex-col bg-card', className)}>
       <style>{scrollStyles}</style>
-      <div className="p-3 border-b border-border flex-shrink-0">
-        <h3 className="font-medium">Properties</h3>
-      </div>
-      
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 flex flex-col h-full overflow-hidden">
-        <TabsList className="mx-3 mt-2 flex-shrink-0">
-          <TabsTrigger value="node" className="flex-1">Node</TabsTrigger>
-          <TabsTrigger value="edge" className="flex-1">Edge</TabsTrigger>
-          <TabsTrigger value="canvas" className="flex-1">Canvas</TabsTrigger>
-        </TabsList>
+      <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab} className="h-full flex flex-col">
+        <div className="flex border-b px-4 py-2">
+          <TabsList className="grid grid-cols-5 h-9">
+            <TabsTrigger value="node" disabled={!selectedNode} className="text-xs">Node</TabsTrigger>
+            <TabsTrigger value="edge" disabled={!selectedEdge} className="text-xs">Edge</TabsTrigger>
+            <TabsTrigger value="canvas" className="text-xs">Canvas</TabsTrigger>
+            <TabsTrigger value="headers" className="text-xs">
+              <Heading1 className="size-4 mr-1" />
+              Headers
+            </TabsTrigger>
+            <TabsTrigger value="export" className="text-xs">Export</TabsTrigger>
+          </TabsList>
+        </div>
         
-        <div className="flex-1 overflow-hidden relative">
-          <ScrollArea 
-            className="flex-1 h-full properties-panel-scroll" 
-            scrollVisibility="auto"
-          >
-            <div className="h-full">
-              <TabsContent value="node" className="p-3 properties-panel-content">
-                {selectedNode ? (
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="font-medium">Node Properties</div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={handleDuplicateNode}
-                          title="Duplicate Node"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-destructive"
-                          onClick={handleDeleteNode}
-                          title="Delete Node"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="node-name">Label</Label>
-                      <Input
-                        id="node-name"
-                        value={nodeName}
-                        onChange={handleNodeNameChange}
-                        placeholder="Node name"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="node-icon">Icon</Label>
-                      <div className="flex flex-col gap-2">
-                        <div className="flex gap-2">
-                          <div 
-                            className="w-10 h-10 rounded-md border border-border flex items-center justify-center"
-                            style={{ backgroundColor: `${nodeColor}20`, color: nodeColor }}
-                          >
-                            {nodeIcon && (
-                              nodeIcon.includes(':') ? (
-                                <Icon icon={nodeIcon} className="h-6 w-6" />
-                              ) : (
-                                <span className="text-xl">{nodeIcon}</span>
-                              )
-                            )}
-                          </div>
-                          <div className="flex-1 flex gap-2">
-                            <Input
-                              id="node-icon"
-                              value={nodeIcon}
-                              onChange={handleNodeIconChange}
-                              placeholder="📱 or lucide:home"
-                              className="flex-1"
-                            />
-                            <Dialog>
-                              <DialogTrigger asChild>
-                                <Button variant="outline" size="icon" className="h-10 w-10">
-                                  <Search className="h-4 w-4" />
-                                </Button>
-                              </DialogTrigger>
-                              <DialogContent className="sm:max-w-[550px]">
-                                <DialogHeader>
-                                  <DialogTitle>Search Icons</DialogTitle>
-                                </DialogHeader>
-                                <div className="py-4">
-                                  <IconPicker
-                                    value={nodeIcon}
-                                    onSelect={handleIconSelect}
-                                  />
-                                </div>
-                              </DialogContent>
-                            </Dialog>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="node-color">Color</Label>
-                      <div className="flex gap-2">
-                        <div
-                          className="w-10 h-10 rounded-md border border-border cursor-pointer"
-                          style={{ backgroundColor: nodeColor }}
-                          onClick={() => setShowColorPicker(!showColorPicker)}
-                        />
-                        <Input
-                          id="node-color"
-                          value={nodeColor}
-                          onChange={(e) => {
-                            setNodeColor(e.target.value);
-                            if (selectedNode) {
-                              updateNode(selectedNode.id, { color: e.target.value });
-                            }
-                          }}
-                        />
-                      </div>
-                      {showColorPicker && (
-                        <div className="absolute z-10 mt-2" style={{ position: 'relative' }}>
-                          <div 
-                            className="fixed inset-0" 
-                            onClick={() => setShowColorPicker(false)}
-                          />
-                          <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
-                            <ChromePicker
-                              color={nodeColor}
-                              onChange={handleNodeColorChange}
-                              disableAlpha
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label>Size</Label>
-                      <div className="grid grid-cols-2 gap-2">
-                        <div className="space-y-1">
-                          <Label htmlFor="node-width" className="text-xs">Width</Label>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              id="node-width"
-                              type="number"
-                              min={100}
-                              value={nodeWidth}
-                              onChange={handleNodeWidthChange}
-                            />
-                            <span className="text-xs text-muted-foreground">px</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor="node-height" className="text-xs">Height</Label>
-                          <div className="flex items-center gap-2">
-                            <Input
-                              id="node-height"
-                              type="number"
-                              min={50}
-                              value={nodeHeight}
-                              onChange={handleNodeHeightChange}
-                            />
-                            <span className="text-xs text-muted-foreground">px</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="border-t border-border pt-4 mt-4">
-                      <h4 className="font-medium text-sm mb-3">Glow Effect</h4>
-                      
-                      <div className="flex items-center gap-2 py-2">
-                        <Label htmlFor="glow-effect" className="flex-1">
-                          Enable Glow
-                        </Label>
-                        <Switch
-                          id="glow-effect"
-                          checked={glowEffect}
-                          onCheckedChange={handleGlowEffectChange}
-                        />
-                      </div>
-                      
-                      {glowEffect && (
-                        <>
-                          <div className="space-y-2 mt-3">
-                            <Label>Glow Color</Label>
-                            <div 
-                              className="h-9 rounded-md border border-input flex items-center justify-between px-3 cursor-pointer"
-                              onClick={() => setShowGlowColorPicker(!showGlowColorPicker)}
-                            >
-                              <div className="flex items-center gap-2">
-                                <div 
-                                  className="w-4 h-4 rounded-full" 
-                                  style={{ backgroundColor: glowColor }}
-                                />
-                                <span>{glowColor}</span>
-                              </div>
-                            </div>
-                            {showGlowColorPicker && (
-                              <div className="absolute z-10 mt-1" style={{ position: 'relative' }}>
-                                <div 
-                                  className="fixed inset-0" 
-                                  onClick={() => setShowGlowColorPicker(false)}
-                                />
-                                <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
-                                  <ChromePicker 
-                                    color={glowColor} 
-                                    onChange={handleGlowColorChange} 
-                                  />
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="space-y-2 mt-3">
-                            <div className="flex justify-between">
-                              <Label>Intensity: {glowIntensity}</Label>
-                            </div>
-                            <Slider
-                              value={[glowIntensity]}
-                              min={1}
-                              max={20}
-                              step={1}
-                              onValueChange={handleGlowIntensityChange}
-                            />
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-4 mb-4">
-                      <Label className="font-medium">Node Shape</Label>
-                      <Select value={nodeShape} onValueChange={handleNodeShapeChange}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select shape" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="rectangle">Rectangle</SelectItem>
-                          <SelectItem value="rounded">Rounded</SelectItem>
-                          <SelectItem value="pill">Pill</SelectItem>
-                          <SelectItem value="diamond">Diamond</SelectItem>
-                          <SelectItem value="hexagon">Hexagon</SelectItem>
-                          <SelectItem value="circle">Circle</SelectItem>
-                          <SelectItem value="parallelogram">Parallelogram</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="space-y-4 mb-4">
-                      <div className="flex justify-between items-center">
-                        <Label>Border Style</Label>
-                        <Select value={nodeBorderStyle} onValueChange={handleNodeBorderStyleChange}>
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Border Style" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="solid">Solid</SelectItem>
-                            <SelectItem value="dashed">Dashed</SelectItem>
-                            <SelectItem value="dotted">Dotted</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <Label>Border Width</Label>
-                          <span className="text-xs text-muted-foreground">{nodeBorderWidth}px</span>
-                        </div>
-                        <Slider
-                          value={[nodeBorderWidth]}
-                          min={0}
-                          max={10}
-                          step={1}
-                          onValueChange={handleNodeBorderWidthChange}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4 mb-4">
-                      <div className="flex justify-between items-center">
-                        <Label>Shadow</Label>
-                        <Select value={nodeShadow} onValueChange={handleNodeShadowChange}>
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Shadow" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="sm">Small</SelectItem>
-                            <SelectItem value="md">Medium</SelectItem>
-                            <SelectItem value="lg">Large</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4 mb-4">
-                      <div className="flex justify-between items-center">
-                        <Label>Animation</Label>
-                        <Select value={nodeAnimation} onValueChange={handleNodeAnimationChange}>
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Animation" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">None</SelectItem>
-                            <SelectItem value="pulse">Pulse</SelectItem>
-                            <SelectItem value="bounce">Bounce</SelectItem>
-                            <SelectItem value="shake">Shake</SelectItem>
-                            <SelectItem value="wiggle">Wiggle</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      {nodeAnimation !== 'none' && (
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <Label>Animation Duration</Label>
-                            <span className="text-xs text-muted-foreground">{nodeAnimationDuration}s</span>
-                          </div>
-                          <Slider
-                            value={[nodeAnimationDuration]}
-                            min={0.5}
-                            max={5}
-                            step={0.1}
-                            onValueChange={handleNodeAnimationDurationChange}
-                          />
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-4 mb-4">
-                      <div className="flex justify-between items-center">
-                        <Label>Colors</Label>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Background</Label>
-                          <div 
-                            className="h-10 w-full rounded-md border border-input flex items-center justify-center cursor-pointer mt-1"
-                            style={{ backgroundColor: nodeBackgroundColor }}
-                            onClick={() => setShowNodeBackgroundColorPicker(!showNodeBackgroundColorPicker)}
-                          />
-                          {showNodeBackgroundColorPicker && (
-                            <div className="absolute z-10 mt-2" style={{ position: 'relative' }}>
-                              <div 
-                                className="fixed inset-0 z-0" 
-                                onClick={() => setShowNodeBackgroundColorPicker(false)} 
-                              />
-                              <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
-                                <ChromePicker 
-                                  color={nodeBackgroundColor} 
-                                  onChange={handleNodeBackgroundColorChange} 
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                        
-                        <div>
-                          <Label className="text-xs text-muted-foreground">Text</Label>
-                          <div 
-                            className="h-10 w-full rounded-md border border-input flex items-center justify-center cursor-pointer mt-1"
-                            style={{ backgroundColor: nodeTextColor }}
-                            onClick={() => setShowNodeTextColorPicker(!showNodeTextColorPicker)}
-                          />
-                          {showNodeTextColorPicker && (
-                            <div className="absolute z-10 mt-2" style={{ position: 'relative' }}>
-                              <div 
-                                className="fixed inset-0 z-0" 
-                                onClick={() => setShowNodeTextColorPicker(false)} 
-                              />
-                              <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
-                                <ChromePicker 
-                                  color={nodeTextColor} 
-                                  onChange={handleNodeTextColorChange} 
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <Label>Opacity</Label>
-                          <span className="text-xs text-muted-foreground">{Math.round(nodeOpacity * 100)}%</span>
-                        </div>
-                        <Slider
-                          value={[nodeOpacity]}
-                          min={0.1}
-                          max={1}
-                          step={0.05}
-                          onValueChange={handleNodeOpacityChange}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="space-y-4 mb-4">
-                      <Label className="font-medium">Icon Settings</Label>
-                      
-                      <div className="flex justify-between items-center">
-                        <Label>Icon Position</Label>
-                        <Select value={nodeIconPosition} onValueChange={handleNodeIconPositionChange}>
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="Position" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="left">Left</SelectItem>
-                            <SelectItem value="right">Right</SelectItem>
-                            <SelectItem value="top">Top</SelectItem>
-                            <SelectItem value="bottom">Bottom</SelectItem>
-                            <SelectItem value="center">Center</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      
-                      <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <Label>Icon Size</Label>
-                          <span className="text-xs text-muted-foreground">{nodeIconSize}px</span>
-                        </div>
-                        <Slider
-                          value={[nodeIconSize]}
-                          min={12}
-                          max={48}
-                          step={1}
-                          onValueChange={handleNodeIconSizeChange}
-                        />
-                      </div>
-                    </div>
-                    
-                    <div className="text-xs text-muted-foreground mt-4">
-                      Node ID: {selectedNode.id}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      Position: x={Math.round(selectedNode.position.x)}, y={Math.round(selectedNode.position.y)}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-40 text-muted-foreground">
-                    Select a node to edit its properties
-                  </div>
-                )}
-              </TabsContent>
-
-              {selectedEdge && (
-                <TabsContent value="edge" className="space-y-4 h-[calc(100vh-9rem)] overflow-y-auto p-1">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Edge Properties</h3>
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      onClick={handleDeleteEdge}
-                      title="Delete Edge"
+        <div className="flex-1 overflow-hidden">
+          <TabsContent value="node" className="h-full m-0 data-[state=active]:flex flex-col">
+            {selectedNode && !isHeaderNodeData(selectedNode.data) ? (
+              <div className="space-y-4">
+                <div className="flex justify-between items-center mb-2">
+                  <div className="font-medium">Node Properties</div>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={handleDuplicateNode}
+                      title="Duplicate Node"
                     >
-                      <Trash2 className="h-4 w-4 text-destructive" />
+                      <Copy className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-destructive"
+                      onClick={handleDeleteNode}
+                      title="Delete Node"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
-                  
-                  {/* Basic Edge Properties */}
-                  <div className="space-y-6">
-                    <div className="space-y-2">
-                      <Label htmlFor="edge-label">Label</Label>
-                      <Input
-                        id="edge-label"
-                        value={edgeLabel}
-                        onChange={handleEdgeLabelChange}
-                        placeholder="Edge label"
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="edge-color">Color</Label>
-                      <div className="flex gap-2">
-                        <div
-                          className="w-10 h-10 rounded-md border border-border cursor-pointer"
-                          style={{ backgroundColor: edgeColor }}
-                          onClick={() => setShowEdgeColorPicker(!showEdgeColorPicker)}
-                        />
-                        <Input
-                          id="edge-color"
-                          value={edgeColor}
-                          onChange={(e) => {
-                            setEdgeColor(e.target.value);
-                            if (selectedEdge) {
-                              updateEdge(selectedEdge.id, { color: e.target.value });
-                            }
-                          }}
-                        />
-                      </div>
-                      {showEdgeColorPicker && (
-                        <div className="absolute z-10 mt-2" style={{ position: 'relative' }}>
-                          <div 
-                            className="fixed inset-0" 
-                            onClick={() => setShowEdgeColorPicker(false)}
-                          />
-                          <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
-                            <ChromePicker
-                              color={edgeColor}
-                              onChange={handleEdgeColorChange}
-                              disableAlpha
-                            />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="edge-thickness">Thickness ({edgeThickness}px)</Label>
-                      <Slider
-                        id="edge-thickness"
-                        min={1}
-                        max={10}
-                        step={1}
-                        value={[edgeThickness]}
-                        onValueChange={handleEdgeThicknessChange}
-                      />
-                    </div>
-                    
-                    <div className="space-y-2">
-                      <Label htmlFor="edge-line-style">Line Style</Label>
-                      <Select 
-                        value={edgeLineStyle} 
-                        onValueChange={(value: 'solid' | 'dashed' | 'dotted') => handleEdgeLineStyleChange(value)}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="node-name">Label</Label>
+                  <Input
+                    id="node-name"
+                    value={nodeName}
+                    onChange={handleNodeNameChange}
+                    placeholder="Node name"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="node-icon">Icon</Label>
+                  <div className="flex flex-col gap-2">
+                    <div className="flex gap-2">
+                      <div 
+                        className="w-10 h-10 rounded-md border border-border flex items-center justify-center"
+                        style={{ backgroundColor: `${nodeColor}20`, color: nodeColor }}
                       >
-                        <SelectTrigger id="edge-line-style">
-                          <SelectValue placeholder="Select line style" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="solid">Solid</SelectItem>
-                          <SelectItem value="dashed">Dashed</SelectItem>
-                          <SelectItem value="dotted">Dotted</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  
-                  {/* Animation Section */}
-                  <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="animation">
-                      <AccordionTrigger>Animation Settings</AccordionTrigger>
-                      <AccordionContent className="space-y-6">
-                        {/* Line Animation */}
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center">
-                            <Label className="text-sm font-medium">Line Animation</Label>
-                            <Switch
-                              id="line-animation-enabled"
-                              checked={lineAnimationEnabled}
-                              onCheckedChange={handleLineAnimationToggle}
-                            />
-                          </div>
-                          
-                          {lineAnimationEnabled && (
-                            <>
-                              <div className="space-y-2">
-                                <Label className="text-sm">Animation Type</Label>
-                                <Select value={edgeAnimationType} onValueChange={handleEdgeAnimationTypeChange}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Animation Type" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="flow">Flow</SelectItem>
-                                    <SelectItem value="pulse">Pulse</SelectItem>
-                                    <SelectItem value="dash">Dash</SelectItem>
-                                    <SelectItem value="rainbow">Rainbow</SelectItem>
-                                    <SelectItem value="laser">Laser</SelectItem>
-                                    <SelectItem value="glow">Glow</SelectItem>
-                                    <SelectItem value="wave">Wave</SelectItem>
-                                    <SelectItem value="traffic">Traffic</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              
-                              <div className="bg-muted/20 rounded p-2 text-xs text-muted-foreground">
-                                {edgeAnimationType === 'flow' && "Creates a flowing motion along the edge direction"}
-                                {edgeAnimationType === 'pulse' && "Pulsates the line thickness for a subtle breathing effect"}
-                                {edgeAnimationType === 'dash' && "Animates dashed lines in the direction of flow"}
-                                {edgeAnimationType === 'rainbow' && "Cycles through vibrant colors for emphasis"}
-                                {edgeAnimationType === 'laser' && "Creates a laser beam effect with changing opacity"}
-                                {edgeAnimationType === 'glow' && "Adds a pulsing glow effect around the edge"}
-                                {edgeAnimationType === 'wave' && "Varies line thickness in a wave-like pattern"}
-                                {edgeAnimationType === 'traffic' && "Uses traffic light colors (red, yellow, green)"}
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <div className="flex justify-between items-center">
-                                  <Label className="text-sm">Animation Speed</Label>
-                                  <span className="text-xs text-muted-foreground">{animationSpeed}s</span>
-                                </div>
-                                <Slider
-                                  value={[animationSpeed]}
-                                  min={0.5}
-                                  max={10}
-                                  step={0.5}
-                                  onValueChange={handleAnimationSpeedChange}
-                                />
-                              </div>
-                              
-                              <div className="flex items-center justify-between">
-                                <Label htmlFor="edge-reverse-animation" className="text-sm">Reverse Direction</Label>
-                                <Switch
-                                  id="edge-reverse-animation"
-                                  checked={edgeReverseAnimation}
-                                  onCheckedChange={handleEdgeReverseAnimationChange}
-                                />
-                              </div>
-                            </>
-                          )}
-                        </div>
-                        
-                        {/* Dot Animation */}
-                        <div className="space-y-4 pt-2 border-t border-border/30">
-                          <div className="flex justify-between items-center">
-                            <Label className="text-sm font-medium">Dot Animation</Label>
-                            <Switch
-                              id="dot-animation-enabled"
-                              checked={dotAnimationEnabled}
-                              onCheckedChange={handleDotAnimationToggle}
-                            />
-                          </div>
-                          
-                          {dotAnimationEnabled && (
-                            <>
-                              <div className="space-y-2">
-                                <Label className="text-sm">Dot Size ({dotSize}px)</Label>
-                                <Slider
-                                  value={[dotSize]}
-                                  min={1}
-                                  max={10}
-                                  step={1}
-                                  onValueChange={handleDotSizeChange}
-                                />
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <Label className="text-sm">Number of Dots ({edgeDotCount})</Label>
-                                <Slider
-                                  value={[edgeDotCount]}
-                                  min={1}
-                                  max={12}
-                                  step={1}
-                                  onValueChange={handleEdgeDotCountChange}
-                                />
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <Label className="text-sm">Dot Color</Label>
-                                <div 
-                                  className="h-9 rounded-md border border-input flex items-center justify-between px-3 cursor-pointer"
-                                  onClick={() => setShowDotColorPicker(!showDotColorPicker)}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <div 
-                                      className="w-4 h-4 rounded-full" 
-                                      style={{ backgroundColor: dotColor }}
-                                    />
-                                    <span>{dotColor}</span>
-                                  </div>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="icon" 
-                                    className="h-6 w-6"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDotColorChange({ hex: edgeColor } as ColorResult);
-                                    }}
-                                    title="Use edge color"
-                                  >
-                                    <RepeatIcon className="h-3 w-3" />
-                                  </Button>
-                                </div>
-                                {showDotColorPicker && (
-                                  <div className="absolute z-10 mt-1" style={{ position: 'relative' }}>
-                                    <div 
-                                      className="fixed inset-0" 
-                                      onClick={() => setShowDotColorPicker(false)}
-                                    />
-                                    <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
-                                      <ChromePicker 
-                                        color={dotColor} 
-                                        onChange={handleDotColorChange} 
-                                      />
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              <div className="space-y-2">
-                                <Label className="text-sm">Dot Animation Type</Label>
-                                <Select value={dotAnimationType} onValueChange={handleDotAnimationTypeChange}>
-                                  <SelectTrigger>
-                                    <SelectValue placeholder="Animation Type" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="standard">Standard</SelectItem>
-                                    <SelectItem value="pulse">Pulse</SelectItem>
-                                    <SelectItem value="fadeIn">Fade In/Out</SelectItem>
-                                    <SelectItem value="grow">Grow</SelectItem>
-                                    <SelectItem value="bounce">Bounce</SelectItem>
-                                    <SelectItem value="accelerate">Accelerate</SelectItem>
-                                    <SelectItem value="traffic">Traffic Light</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              
-                              <div className="text-xs text-muted-foreground mt-1">
-                                {dotAnimationType === 'standard' && "Basic animation along the path"}
-                                {dotAnimationType === 'pulse' && "Dots pulsate as they move along the path"}
-                                {dotAnimationType === 'fadeIn' && "Dots fade in and out as they travel"}
-                                {dotAnimationType === 'grow' && "Dots grow and shrink while moving"}
-                                {dotAnimationType === 'bounce' && "Dots bounce as they travel along the path"}
-                                {dotAnimationType === 'accelerate' && "Dots start slow and accelerate to the end"}
-                                {dotAnimationType === 'traffic' && "Red, yellow, and green dots simulate traffic signals"}
-                              </div>
-                              
-                              <div className="flex items-center justify-between">
-                                <Label htmlFor="dot-reverse-animation" className="text-sm">Reverse Direction</Label>
-                                <Switch
-                                  id="dot-reverse-animation"
-                                  checked={edgeReverseAnimation}
-                                  onCheckedChange={handleEdgeReverseAnimationChange}
-                                />
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                    
-                    {/* Style & Shape Section */}
-                    <AccordionItem value="style">
-                      <AccordionTrigger>Style & Shape</AccordionTrigger>
-                      <AccordionContent className="space-y-6">
-                        <div className="space-y-4">
-                          <div className="flex justify-between items-center">
-                            <Label>Line Pattern</Label>
-                            <Select value={edgePattern} onValueChange={handleEdgePatternChange}>
-                              <SelectTrigger className="w-32">
-                                <SelectValue placeholder="Pattern" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="solid">Solid</SelectItem>
-                                <SelectItem value="dashed">Dashed</SelectItem>
-                                <SelectItem value="dotted">Dotted</SelectItem>
-                                <SelectItem value="double">Double</SelectItem>
-                                <SelectItem value="gradient">Gradient</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
-                          
-                          <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <Label>Curvature</Label>
-                              <span className="text-xs text-muted-foreground">{edgeCurvature.toFixed(1)}</span>
-                            </div>
-                            <Slider
-                              value={[edgeCurvature]}
-                              min={0}
-                              max={1}
-                              step={0.1}
-                              onValueChange={handleEdgeCurvatureChange}
-                            />
-                          </div>
-                          
-                          <div>
-                            <div className="flex justify-between items-center mb-2">
-                              <Label>Opacity</Label>
-                              <span className="text-xs text-muted-foreground">{Math.round(edgeOpacity * 100)}%</span>
-                            </div>
-                            <Slider
-                              value={[edgeOpacity]}
-                              min={0.1}
-                              max={1}
-                              step={0.05}
-                              onValueChange={handleEdgeOpacityChange}
-                            />
-                          </div>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                    
-                    {/* Arrows Section */}
-                    <AccordionItem value="arrows">
-                      <AccordionTrigger>Arrows</AccordionTrigger>
-                      <AccordionContent className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="start-arrow"
-                              checked={edgeStartArrow}
-                              onCheckedChange={handleEdgeStartArrowChange}
-                            />
-                            <Label htmlFor="start-arrow">Start Arrow</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              id="end-arrow"
-                              checked={edgeEndArrow}
-                              onCheckedChange={handleEdgeEndArrowChange}
-                            />
-                            <Label htmlFor="end-arrow">End Arrow</Label>
-                          </div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Switch
-                            id="bidirectional"
-                            checked={edgeBidirectional}
-                            onCheckedChange={handleEdgeBidirectionalChange}
-                          />
-                          <Label htmlFor="bidirectional">Bidirectional</Label>
-                        </div>
-                      </AccordionContent>
-                    </AccordionItem>
-                  </Accordion>
-                  
-                  <div className="text-xs text-muted-foreground mt-4">
-                    Edge ID: {selectedEdge.id}
-                  </div>
-                </TabsContent>
-              )}
-
-              <TabsContent value="canvas" className="p-3 properties-panel-content">
-                <div className="space-y-4">
-                  <div className="font-medium mb-2">Canvas Properties</div>
-                  
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label>Size Preset</Label>
-                      <Select onValueChange={handleCanvasPresetChange}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a preset size" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {CANVAS_PRESETS.map((preset) => (
-                            <SelectItem key={preset.name} value={preset.name}>
-                              {preset.name} ({preset.width}×{preset.height})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="canvas-width">Width (px)</Label>
-                        <Input
-                          id="canvas-width"
-                          type="number"
-                          value={canvasWidth}
-                          onChange={handleCanvasWidthChange}
-                          min={100}
-                          max={4000}
-                        />
+                        {nodeIcon && (
+                          nodeIcon.includes(':') ? (
+                            <Icon icon={nodeIcon} className="h-6 w-6" />
+                          ) : (
+                            <span className="text-xl">{nodeIcon}</span>
+                          )
+                        )}
                       </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="canvas-height">Height (px)</Label>
+                      <div className="flex-1 flex gap-2">
                         <Input
-                          id="canvas-height"
-                          type="number"
-                          value={canvasHeight}
-                          onChange={handleCanvasHeightChange}
-                          min={100}
-                          max={4000}
+                          id="node-icon"
+                          value={nodeIcon}
+                          onChange={handleNodeIconChange}
+                          placeholder="📱 or lucide:home"
+                          className="flex-1"
+                        />
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="icon" className="h-10 w-10">
+                              <Search className="h-4 w-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="sm:max-w-[550px]">
+                            <DialogHeader>
+                              <DialogTitle>Search Icons</DialogTitle>
+                            </DialogHeader>
+                            <div className="py-4">
+                              <IconPicker
+                                value={nodeIcon}
+                                onSelect={handleIconSelect}
+                              />
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="node-color">Color</Label>
+                  <div className="flex gap-2">
+                    <div
+                      className="w-10 h-10 rounded-md border border-border cursor-pointer"
+                      style={{ backgroundColor: nodeColor }}
+                      onClick={() => setShowColorPicker(!showColorPicker)}
+                    />
+                    <Input
+                      id="node-color"
+                      value={nodeColor}
+                      onChange={(e) => {
+                        setNodeColor(e.target.value);
+                        if (selectedNode) {
+                          updateNode(selectedNode.id, { color: e.target.value });
+                        }
+                      }}
+                    />
+                  </div>
+                  {showColorPicker && (
+                    <div className="absolute z-10 mt-2" style={{ position: 'relative' }}>
+                      <div 
+                        className="fixed inset-0" 
+                        onClick={() => setShowColorPicker(false)}
+                      />
+                      <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
+                        <ChromePicker
+                          color={nodeColor}
+                          onChange={handleNodeColorChange}
+                          disableAlpha
                         />
                       </div>
                     </div>
-                    
-                    <div className="border-t border-border pt-4 mt-4">
-                      <h4 className="font-medium text-sm mb-3">Background</h4>
-                      
-                      <div className="space-y-2">
-                        <Label>Background Color</Label>
+                  )}
+                </div>
+                
+                <div className="space-y-2">
+                  <Label>Size</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="node-width" className="text-xs">Width</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="node-width"
+                          type="number"
+                          min={100}
+                          value={nodeWidth}
+                          onChange={handleNodeWidthChange}
+                        />
+                        <span className="text-xs text-muted-foreground">px</span>
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="node-height" className="text-xs">Height</Label>
+                      <div className="flex items-center gap-2">
+                        <Input
+                          id="node-height"
+                          type="number"
+                          min={50}
+                          value={nodeHeight}
+                          onChange={handleNodeHeightChange}
+                        />
+                        <span className="text-xs text-muted-foreground">px</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="border-t border-border pt-4 mt-4">
+                  <h4 className="font-medium text-sm mb-3">Glow Effect</h4>
+                  
+                  <div className="flex items-center gap-2 py-2">
+                    <Label htmlFor="glow-effect" className="flex-1">
+                      Enable Glow
+                    </Label>
+                    <Switch
+                      id="glow-effect"
+                      checked={glowEffect}
+                      onCheckedChange={handleGlowEffectChange}
+                    />
+                  </div>
+                  
+                  {glowEffect && (
+                    <>
+                      <div className="space-y-2 mt-3">
+                        <Label>Glow Color</Label>
                         <div 
                           className="h-9 rounded-md border border-input flex items-center justify-between px-3 cursor-pointer"
-                          onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+                          onClick={() => setShowGlowColorPicker(!showGlowColorPicker)}
                         >
                           <div className="flex items-center gap-2">
                             <div 
                               className="w-4 h-4 rounded-full" 
-                              style={{ backgroundColor: backgroundColor }}
+                              style={{ backgroundColor: glowColor }}
                             />
-                            <span>{backgroundColor}</span>
+                            <span>{glowColor}</span>
                           </div>
                         </div>
-                        {showBgColorPicker && (
+                        {showGlowColorPicker && (
                           <div className="absolute z-10 mt-1" style={{ position: 'relative' }}>
                             <div 
                               className="fixed inset-0" 
-                              onClick={() => setShowBgColorPicker(false)}
+                              onClick={() => setShowGlowColorPicker(false)}
                             />
                             <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
                               <ChromePicker 
-                                color={backgroundColor} 
-                                onChange={handleBackgroundColorChange} 
+                                color={glowColor} 
+                                onChange={handleGlowColorChange} 
                               />
                             </div>
                           </div>
                         )}
                       </div>
-                    </div>
-                    
-                    <div className="border-t border-border pt-4 mt-4">
-                      <h4 className="font-medium text-sm mb-3">Grid Settings</h4>
                       
-                      <div className="flex items-center gap-2 py-2">
-                        <Label htmlFor="grid-visible" className="flex-1">
-                          Show Grid
-                        </Label>
-                        <Switch
-                          id="grid-visible"
-                          checked={isGridVisible}
-                          onCheckedChange={toggleGrid}
+                      <div className="space-y-2 mt-3">
+                        <div className="flex justify-between">
+                          <Label>Intensity: {glowIntensity}</Label>
+                        </div>
+                        <Slider
+                          value={[glowIntensity]}
+                          min={1}
+                          max={20}
+                          step={1}
+                          onValueChange={handleGlowIntensityChange}
                         />
                       </div>
-                      
-                      {isGridVisible && (
-                        <>
-                          <div className="space-y-2 mt-3">
-                            <div className="flex justify-between">
-                              <Label>Grid Size: {gridSize}px</Label>
-                            </div>
-                            <Slider
-                              value={[gridSize]}
-                              min={5}
-                              max={50}
-                              step={5}
-                              onValueChange={handleGridSizeChange}
+                    </>
+                  )}
+                </div>
+                
+                <div className="space-y-4 mb-4">
+                  <Label className="font-medium">Node Shape</Label>
+                  <Select value={nodeShape} onValueChange={handleNodeShapeChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select shape" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="rectangle">Rectangle</SelectItem>
+                      <SelectItem value="rounded">Rounded</SelectItem>
+                      <SelectItem value="pill">Pill</SelectItem>
+                      <SelectItem value="diamond">Diamond</SelectItem>
+                      <SelectItem value="hexagon">Hexagon</SelectItem>
+                      <SelectItem value="circle">Circle</SelectItem>
+                      <SelectItem value="parallelogram">Parallelogram</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="space-y-4 mb-4">
+                  <div className="flex justify-between items-center">
+                    <Label>Border Style</Label>
+                    <Select value={nodeBorderStyle} onValueChange={handleNodeBorderStyleChange}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Border Style" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="solid">Solid</SelectItem>
+                        <SelectItem value="dashed">Dashed</SelectItem>
+                        <SelectItem value="dotted">Dotted</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <Label>Border Width</Label>
+                      <span className="text-xs text-muted-foreground">{nodeBorderWidth}px</span>
+                    </div>
+                    <Slider
+                      value={[nodeBorderWidth]}
+                      min={0}
+                      max={10}
+                      step={1}
+                      onValueChange={handleNodeBorderWidthChange}
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-4 mb-4">
+                  <div className="flex justify-between items-center">
+                    <Label>Shadow</Label>
+                    <Select value={nodeShadow} onValueChange={handleNodeShadowChange}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Shadow" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="sm">Small</SelectItem>
+                        <SelectItem value="md">Medium</SelectItem>
+                        <SelectItem value="lg">Large</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className="space-y-4 mb-4">
+                  <div className="flex justify-between items-center">
+                    <Label>Animation</Label>
+                    <Select value={nodeAnimation} onValueChange={handleNodeAnimationChange}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Animation" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="pulse">Pulse</SelectItem>
+                        <SelectItem value="bounce">Bounce</SelectItem>
+                        <SelectItem value="shake">Shake</SelectItem>
+                        <SelectItem value="wiggle">Wiggle</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {nodeAnimation !== 'none' && (
+                    <div>
+                      <div className="flex justify-between items-center mb-2">
+                        <Label>Animation Duration</Label>
+                        <span className="text-xs text-muted-foreground">{nodeAnimationDuration}s</span>
+                      </div>
+                      <Slider
+                        value={[nodeAnimationDuration]}
+                        min={0.5}
+                        max={5}
+                        step={0.1}
+                        onValueChange={handleNodeAnimationDurationChange}
+                      />
+                    </div>
+                  )}
+                </div>
+                
+                <div className="space-y-4 mb-4">
+                  <div className="flex justify-between items-center">
+                    <Label>Colors</Label>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Background</Label>
+                      <div 
+                        className="h-10 w-full rounded-md border border-input flex items-center justify-center cursor-pointer mt-1"
+                        style={{ backgroundColor: nodeBackgroundColor }}
+                        onClick={() => setShowNodeBackgroundColorPicker(!showNodeBackgroundColorPicker)}
+                      />
+                      {showNodeBackgroundColorPicker && (
+                        <div className="absolute z-10 mt-2" style={{ position: 'relative' }}>
+                          <div 
+                            className="fixed inset-0 z-0" 
+                            onClick={() => setShowNodeBackgroundColorPicker(false)} 
+                          />
+                          <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
+                            <ChromePicker 
+                              color={nodeBackgroundColor} 
+                              onChange={handleNodeBackgroundColorChange} 
                             />
                           </div>
-                          
-                          <div className="flex items-center gap-2 py-2">
-                            <Label htmlFor="snap-to-grid" className="flex-1">
-                              Snap to Grid
-                            </Label>
-                            <Switch
-                              id="snap-to-grid"
-                              checked={snapToGrid}
-                              onCheckedChange={handleSnapToGridChange}
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div>
+                      <Label className="text-xs text-muted-foreground">Text</Label>
+                      <div 
+                        className="h-10 w-full rounded-md border border-input flex items-center justify-center cursor-pointer mt-1"
+                        style={{ backgroundColor: nodeTextColor }}
+                        onClick={() => setShowNodeTextColorPicker(!showNodeTextColorPicker)}
+                      />
+                      {showNodeTextColorPicker && (
+                        <div className="absolute z-10 mt-2" style={{ position: 'relative' }}>
+                          <div 
+                            className="fixed inset-0 z-0" 
+                            onClick={() => setShowNodeTextColorPicker(false)} 
+                          />
+                          <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
+                            <ChromePicker 
+                              color={nodeTextColor} 
+                              onChange={handleNodeTextColorChange} 
                             />
                           </div>
-                        </>
+                        </div>
                       )}
                     </div>
                   </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <Label>Opacity</Label>
+                      <span className="text-xs text-muted-foreground">{Math.round(nodeOpacity * 100)}%</span>
+                    </div>
+                    <Slider
+                      value={[nodeOpacity]}
+                      min={0.1}
+                      max={1}
+                      step={0.05}
+                      onValueChange={handleNodeOpacityChange}
+                    />
+                  </div>
                 </div>
-              </TabsContent>
+                
+                <div className="space-y-4 mb-4">
+                  <Label className="font-medium">Icon Settings</Label>
+                  
+                  <div className="flex justify-between items-center">
+                    <Label>Icon Position</Label>
+                    <Select value={nodeIconPosition} onValueChange={handleNodeIconPositionChange}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Position" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="left">Left</SelectItem>
+                        <SelectItem value="right">Right</SelectItem>
+                        <SelectItem value="top">Top</SelectItem>
+                        <SelectItem value="bottom">Bottom</SelectItem>
+                        <SelectItem value="center">Center</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <Label>Icon Size</Label>
+                      <span className="text-xs text-muted-foreground">{nodeIconSize}px</span>
+                    </div>
+                    <Slider
+                      value={[nodeIconSize]}
+                      min={12}
+                      max={48}
+                      step={1}
+                      onValueChange={handleNodeIconSizeChange}
+                    />
+                  </div>
+                </div>
+                
+                <div className="text-xs text-muted-foreground mt-4">
+                  Node ID: {selectedNode.id}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Position: x={Math.round(selectedNode.position.x)}, y={Math.round(selectedNode.position.y)}
+                </div>
+              </div>
+            ) : (
+              <div className="p-4">
+                <p className="text-muted-foreground text-center">Select a node to edit its properties</p>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="edge" className="h-full m-0 data-[state=active]:flex flex-col">
+            {selectedEdge && (
+              <div className="space-y-4 h-[calc(100vh-9rem)] overflow-y-auto p-1">
+                <div className="flex justify-between items-center">
+                  <h3 className="text-lg font-semibold">Edge Properties</h3>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={handleDeleteEdge}
+                    title="Delete Edge"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+                
+                {/* Basic Edge Properties */}
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <Label htmlFor="edge-label">Label</Label>
+                    <Input
+                      id="edge-label"
+                      value={edgeLabel}
+                      onChange={handleEdgeLabelChange}
+                      placeholder="Edge label"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="edge-color">Color</Label>
+                    <div className="flex gap-2">
+                      <div
+                        className="w-10 h-10 rounded-md border border-border cursor-pointer"
+                        style={{ backgroundColor: edgeColor }}
+                        onClick={() => setShowEdgeColorPicker(!showEdgeColorPicker)}
+                      />
+                      <Input
+                        id="edge-color"
+                        value={edgeColor}
+                        onChange={(e) => {
+                          setEdgeColor(e.target.value);
+                          if (selectedEdge) {
+                            updateEdge(selectedEdge.id, { color: e.target.value });
+                          }
+                        }}
+                      />
+                    </div>
+                    {showEdgeColorPicker && (
+                      <div className="absolute z-10 mt-2" style={{ position: 'relative' }}>
+                        <div 
+                          className="fixed inset-0" 
+                          onClick={() => setShowEdgeColorPicker(false)}
+                        />
+                        <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
+                          <ChromePicker
+                            color={edgeColor}
+                            onChange={handleEdgeColorChange}
+                            disableAlpha
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="edge-thickness">Thickness ({edgeThickness}px)</Label>
+                    <Slider
+                      id="edge-thickness"
+                      min={1}
+                      max={10}
+                      step={1}
+                      value={[edgeThickness]}
+                      onValueChange={handleEdgeThicknessChange}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="edge-line-style">Line Style</Label>
+                    <Select 
+                      value={edgeLineStyle} 
+                      onValueChange={(value: 'solid' | 'dashed' | 'dotted') => handleEdgeLineStyleChange(value)}
+                    >
+                      <SelectTrigger id="edge-line-style">
+                        <SelectValue placeholder="Select line style" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="solid">Solid</SelectItem>
+                        <SelectItem value="dashed">Dashed</SelectItem>
+                        <SelectItem value="dotted">Dotted</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                {/* Animation Section */}
+                <Accordion type="single" collapsible className="w-full">
+                  <AccordionItem value="animation">
+                    <AccordionTrigger>Animation Settings</AccordionTrigger>
+                    <AccordionContent className="space-y-6">
+                      {/* Line Animation */}
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <Label className="text-sm font-medium">Line Animation</Label>
+                          <Switch
+                            id="line-animation-enabled"
+                            checked={lineAnimationEnabled}
+                            onCheckedChange={handleLineAnimationToggle}
+                          />
+                        </div>
+                        
+                        {lineAnimationEnabled && (
+                          <>
+                            <div className="space-y-2">
+                              <Label className="text-sm">Animation Type</Label>
+                              <Select value={edgeAnimationType} onValueChange={handleEdgeAnimationTypeChange}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Animation Type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="flow">Flow</SelectItem>
+                                  <SelectItem value="pulse">Pulse</SelectItem>
+                                  <SelectItem value="dash">Dash</SelectItem>
+                                  <SelectItem value="rainbow">Rainbow</SelectItem>
+                                  <SelectItem value="laser">Laser</SelectItem>
+                                  <SelectItem value="glow">Glow</SelectItem>
+                                  <SelectItem value="wave">Wave</SelectItem>
+                                  <SelectItem value="traffic">Traffic</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="bg-muted/20 rounded p-2 text-xs text-muted-foreground">
+                              {edgeAnimationType === 'flow' && "Creates a flowing motion along the edge direction"}
+                              {edgeAnimationType === 'pulse' && "Pulsates the line thickness for a subtle breathing effect"}
+                              {edgeAnimationType === 'dash' && "Animates dashed lines in the direction of flow"}
+                              {edgeAnimationType === 'rainbow' && "Cycles through vibrant colors for emphasis"}
+                              {edgeAnimationType === 'laser' && "Creates a laser beam effect with changing opacity"}
+                              {edgeAnimationType === 'glow' && "Adds a pulsing glow effect around the edge"}
+                              {edgeAnimationType === 'wave' && "Varies line thickness in a wave-like pattern"}
+                              {edgeAnimationType === 'traffic' && "Uses traffic light colors (red, yellow, green)"}
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center">
+                                <Label className="text-sm">Animation Speed</Label>
+                                <span className="text-xs text-muted-foreground">{animationSpeed}s</span>
+                              </div>
+                              <Slider
+                                value={[animationSpeed]}
+                                min={0.5}
+                                max={10}
+                                step={0.5}
+                                onValueChange={handleAnimationSpeedChange}
+                              />
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor="edge-reverse-animation" className="text-sm">Reverse Direction</Label>
+                              <Switch
+                                id="edge-reverse-animation"
+                                checked={edgeReverseAnimation}
+                                onCheckedChange={handleEdgeReverseAnimationChange}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Dot Animation */}
+                      <div className="space-y-4 pt-2 border-t border-border/30">
+                        <div className="flex justify-between items-center">
+                          <Label className="text-sm font-medium">Dot Animation</Label>
+                          <Switch
+                            id="dot-animation-enabled"
+                            checked={dotAnimationEnabled}
+                            onCheckedChange={handleDotAnimationToggle}
+                          />
+                        </div>
+                        
+                        {dotAnimationEnabled && (
+                          <>
+                            <div className="space-y-2">
+                              <Label className="text-sm">Dot Size ({dotSize}px)</Label>
+                              <Slider
+                                value={[dotSize]}
+                                min={1}
+                                max={10}
+                                step={1}
+                                onValueChange={handleDotSizeChange}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm">Number of Dots ({edgeDotCount})</Label>
+                              <Slider
+                                value={[edgeDotCount]}
+                                min={1}
+                                max={12}
+                                step={1}
+                                onValueChange={handleEdgeDotCountChange}
+                              />
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm">Dot Color</Label>
+                              <div 
+                                className="h-9 rounded-md border border-input flex items-center justify-between px-3 cursor-pointer"
+                                onClick={() => setShowDotColorPicker(!showDotColorPicker)}
+                              >
+                                <div className="flex items-center gap-2">
+                                  <div 
+                                    className="w-4 h-4 rounded-full" 
+                                    style={{ backgroundColor: dotColor }}
+                                  />
+                                  <span>{dotColor}</span>
+                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  className="h-6 w-6"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDotColorChange({ hex: edgeColor } as ColorResult);
+                                  }}
+                                  title="Use edge color"
+                                >
+                                  <RepeatIcon className="h-3 w-3" />
+                                </Button>
+                              </div>
+                              {showDotColorPicker && (
+                                <div className="absolute z-10 mt-1" style={{ position: 'relative' }}>
+                                  <div 
+                                    className="fixed inset-0" 
+                                    onClick={() => setShowDotColorPicker(false)}
+                                  />
+                                  <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
+                                    <ChromePicker 
+                                      color={dotColor} 
+                                      onChange={handleDotColorChange} 
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="space-y-2">
+                              <Label className="text-sm">Dot Animation Type</Label>
+                              <Select value={dotAnimationType} onValueChange={handleDotAnimationTypeChange}>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Animation Type" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="standard">Standard</SelectItem>
+                                  <SelectItem value="pulse">Pulse</SelectItem>
+                                  <SelectItem value="fadeIn">Fade In/Out</SelectItem>
+                                  <SelectItem value="grow">Grow</SelectItem>
+                                  <SelectItem value="bounce">Bounce</SelectItem>
+                                  <SelectItem value="accelerate">Accelerate</SelectItem>
+                                  <SelectItem value="traffic">Traffic Light</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {dotAnimationType === 'standard' && "Basic animation along the path"}
+                              {dotAnimationType === 'pulse' && "Dots pulsate as they move along the path"}
+                              {dotAnimationType === 'fadeIn' && "Dots fade in and out as they travel"}
+                              {dotAnimationType === 'grow' && "Dots grow and shrink while moving"}
+                              {dotAnimationType === 'bounce' && "Dots bounce as they travel along the path"}
+                              {dotAnimationType === 'accelerate' && "Dots start slow and accelerate to the end"}
+                              {dotAnimationType === 'traffic' && "Red, yellow, and green dots simulate traffic signals"}
+                            </div>
+                            
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor="dot-reverse-animation" className="text-sm">Reverse Direction</Label>
+                              <Switch
+                                id="dot-reverse-animation"
+                                checked={edgeReverseAnimation}
+                                onCheckedChange={handleEdgeReverseAnimationChange}
+                              />
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                  
+                  {/* Style & Shape Section */}
+                  <AccordionItem value="style">
+                    <AccordionTrigger>Style & Shape</AccordionTrigger>
+                    <AccordionContent className="space-y-6">
+                      <div className="space-y-4">
+                        <div className="flex justify-between items-center">
+                          <Label>Line Pattern</Label>
+                          <Select value={edgePattern} onValueChange={handleEdgePatternChange}>
+                            <SelectTrigger className="w-32">
+                              <SelectValue placeholder="Pattern" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="solid">Solid</SelectItem>
+                              <SelectItem value="dashed">Dashed</SelectItem>
+                              <SelectItem value="dotted">Dotted</SelectItem>
+                              <SelectItem value="double">Double</SelectItem>
+                              <SelectItem value="gradient">Gradient</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <Label>Curvature</Label>
+                            <span className="text-xs text-muted-foreground">{edgeCurvature.toFixed(1)}</span>
+                          </div>
+                          <Slider
+                            value={[edgeCurvature]}
+                            min={0}
+                            max={1}
+                            step={0.1}
+                            onValueChange={handleEdgeCurvatureChange}
+                          />
+                        </div>
+                        
+                        <div>
+                          <div className="flex justify-between items-center mb-2">
+                            <Label>Opacity</Label>
+                            <span className="text-xs text-muted-foreground">{Math.round(edgeOpacity * 100)}%</span>
+                          </div>
+                          <Slider
+                            value={[edgeOpacity]}
+                            min={0.1}
+                            max={1}
+                            step={0.05}
+                            onValueChange={handleEdgeOpacityChange}
+                          />
+                        </div>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                  
+                  {/* Arrows Section */}
+                  <AccordionItem value="arrows">
+                    <AccordionTrigger>Arrows</AccordionTrigger>
+                    <AccordionContent className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="start-arrow"
+                            checked={edgeStartArrow}
+                            onCheckedChange={handleEdgeStartArrowChange}
+                          />
+                          <Label htmlFor="start-arrow">Start Arrow</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Switch
+                            id="end-arrow"
+                            checked={edgeEndArrow}
+                            onCheckedChange={handleEdgeEndArrowChange}
+                          />
+                          <Label htmlFor="end-arrow">End Arrow</Label>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <Switch
+                          id="bidirectional"
+                          checked={edgeBidirectional}
+                          onCheckedChange={handleEdgeBidirectionalChange}
+                        />
+                        <Label htmlFor="bidirectional">Bidirectional</Label>
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+                
+                <div className="text-xs text-muted-foreground mt-4">
+                  Edge ID: {selectedEdge.id}
+                </div>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="canvas" className="h-full m-0 data-[state=active]:flex flex-col">
+            <div className="space-y-4">
+              <div className="font-medium mb-2">Canvas Properties</div>
+              
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Size Preset</Label>
+                  <Select onValueChange={handleCanvasPresetChange}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select a preset size" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {CANVAS_PRESETS.map((preset) => (
+                        <SelectItem key={preset.name} value={preset.name}>
+                          {preset.name} ({preset.width}×{preset.height})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="canvas-width">Width (px)</Label>
+                    <Input
+                      id="canvas-width"
+                      type="number"
+                      value={canvasWidth}
+                      onChange={handleCanvasWidthChange}
+                      min={100}
+                      max={4000}
+                    />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="canvas-height">Height (px)</Label>
+                    <Input
+                      id="canvas-height"
+                      type="number"
+                      value={canvasHeight}
+                      onChange={handleCanvasHeightChange}
+                      min={100}
+                      max={4000}
+                    />
+                  </div>
+                </div>
+                
+                <div className="border-t border-border pt-4 mt-4">
+                  <h4 className="font-medium text-sm mb-3">Background</h4>
+                  
+                  <div className="space-y-2">
+                    <Label>Background Color</Label>
+                    <div 
+                      className="h-9 rounded-md border border-input flex items-center justify-between px-3 cursor-pointer"
+                      onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+                    >
+                      <div className="flex items-center gap-2">
+                        <div 
+                          className="w-4 h-4 rounded-full" 
+                          style={{ backgroundColor: backgroundColor }}
+                        />
+                        <span>{backgroundColor}</span>
+                      </div>
+                    </div>
+                    {showBgColorPicker && (
+                      <div className="absolute z-10 mt-1" style={{ position: 'relative' }}>
+                        <div 
+                          className="fixed inset-0" 
+                          onClick={() => setShowBgColorPicker(false)}
+                        />
+                        <div className="relative" style={{ position: 'absolute', right: '0', zIndex: 11 }}>
+                          <ChromePicker 
+                            color={backgroundColor} 
+                            onChange={handleBackgroundColorChange} 
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="border-t border-border pt-4 mt-4">
+                  <h4 className="font-medium text-sm mb-3">Grid Settings</h4>
+                  
+                  <div className="flex items-center gap-2 py-2">
+                    <Label htmlFor="grid-visible" className="flex-1">
+                      Show Grid
+                    </Label>
+                    <Switch
+                      id="grid-visible"
+                      checked={isGridVisible}
+                      onCheckedChange={toggleGrid}
+                    />
+                  </div>
+                  
+                  {isGridVisible && (
+                    <>
+                      <div className="space-y-2 mt-3">
+                        <div className="flex justify-between">
+                          <Label>Grid Size: {gridSize}px</Label>
+                        </div>
+                        <Slider
+                          value={[gridSize]}
+                          min={5}
+                          max={50}
+                          step={5}
+                          onValueChange={handleGridSizeChange}
+                        />
+                      </div>
+                      
+                      <div className="flex items-center gap-2 py-2">
+                        <Label htmlFor="snap-to-grid" className="flex-1">
+                          Snap to Grid
+                        </Label>
+                        <Switch
+                          id="snap-to-grid"
+                          checked={snapToGrid}
+                          onCheckedChange={handleSnapToGridChange}
+                        />
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
             </div>
-          </ScrollArea>
+          </TabsContent>
+          
+          <TabsContent value="headers" className="h-full m-0 data-[state=active]:flex flex-col">
+            <ScrollArea className="flex-1">
+              <HeaderPanel />
+            </ScrollArea>
+          </TabsContent>
+          
+          <TabsContent value="export" className="h-full m-0 data-[state=active]:flex flex-col">
+            {/* ... existing export content ... */}
+          </TabsContent>
         </div>
       </Tabs>
     </div>
