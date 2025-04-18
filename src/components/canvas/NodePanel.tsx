@@ -36,6 +36,54 @@ import { INTEGRATION_ICONS } from '@/lib/integrationIcons';
 // Node category definitions with expanded categories and nodes
 const nodeCategories = [
   {
+    id: 'text',
+    label: 'Text & Content',
+    icon: <FileText size={16} />,
+    nodes: [
+      { 
+        id: 'header-h1', 
+        label: 'Heading 1', 
+        icon: 'lucide:heading-1', 
+        color: '#3b82f6', 
+        description: 'Large header text',
+        isNew: true,
+        headerLevel: 'h1'
+      },
+      { 
+        id: 'header-h2', 
+        label: 'Heading 2', 
+        icon: 'lucide:heading-2', 
+        color: '#8b5cf6', 
+        description: 'Medium header text',
+        isNew: true,
+        headerLevel: 'h2'
+      },
+      { 
+        id: 'header-h3', 
+        label: 'Heading 3', 
+        icon: 'lucide:heading-3', 
+        color: '#ec4899', 
+        description: 'Small header text',
+        isNew: true,
+        headerLevel: 'h3'
+      },
+      { 
+        id: 'paragraph', 
+        label: 'Paragraph', 
+        icon: 'lucide:text', 
+        color: '#10b981', 
+        description: 'Regular paragraph text' 
+      },
+      { 
+        id: 'rich-text', 
+        label: 'Rich Text', 
+        icon: 'lucide:text-cursor-input', 
+        color: '#f97316', 
+        description: 'Formatted rich text block' 
+      },
+    ]
+  },
+  {
     id: 'triggers',
     label: 'Triggers',
     icon: <Zap size={16} />,
@@ -438,47 +486,113 @@ const nodeCategories = [
     featured: true,
     nodes: [
       { 
-        id: 'zapier', 
-        label: 'Zapier', 
-        icon: 'simple-icons:zapier', 
-        color: '#FF4A00', 
-        description: 'Connect to Zapier',
+        id: 'shopify', 
+        label: 'Shopify', 
+        icon: 'shopify', 
+        color: '#96BF47', 
+        description: 'Connect to Shopify',
         isNew: true 
       },
       { 
-        id: 'make', 
-        label: 'Make.com', 
-        icon: 'simple-icons:make', 
-        color: '#0E0F3D', 
-        description: 'Connect to Make.com' 
+        id: 'stripe', 
+        label: 'Stripe', 
+        icon: 'stripe', 
+        color: '#635BFF', 
+        description: 'Process payments with Stripe' 
       },
       { 
-        id: 'n8n', 
-        label: 'n8n', 
-        icon: 'simple-icons:n8n', 
-        color: '#6A57D5', 
-        description: 'Connect to n8n' 
+        id: 'github', 
+        label: 'GitHub', 
+        icon: 'github', 
+        color: '#181717', 
+        description: 'Connect to GitHub',
+        isNew: true 
       },
       { 
-        id: 'notion', 
+        id: 'instagram', 
+        label: 'Instagram', 
+        icon: 'instagram', 
+        color: '#E4405F', 
+        description: 'Connect to Instagram',
+        isNew: true
+      },
+      { 
+        id: 'slack-integration', 
+        label: 'Slack', 
+        icon: 'slack', 
+        color: '#4A154B', 
+        description: 'Connect to Slack workspace' 
+      },
+      { 
+        id: 'notion-integration', 
         label: 'Notion', 
-        icon: 'simple-icons:notion', 
+        icon: 'notion', 
         color: '#000000', 
-        description: 'Connect to Notion' 
+        description: 'Connect to Notion workspace' 
       },
       { 
-        id: 'asana', 
-        label: 'Asana', 
-        icon: 'simple-icons:asana', 
-        color: '#F06A6A', 
-        description: 'Connect to Asana' 
+        id: 'hubspot-integration', 
+        label: 'HubSpot', 
+        icon: 'hubspot', 
+        color: '#FF7A59', 
+        description: 'Connect to HubSpot CRM',
+        isNew: true
       },
       { 
-        id: 'trello', 
-        label: 'Trello', 
-        icon: 'logos:trello', 
-        color: '#0079BF', 
-        description: 'Connect to Trello' 
+        id: 'google-analytics-integration', 
+        label: 'Google Analytics', 
+        icon: 'google-analytics', 
+        color: '#E37400', 
+        description: 'Connect to Google Analytics' 
+      },
+    ]
+  },
+  {
+    id: 'social-media',
+    label: 'Social Media',
+    icon: <MessageSquare size={16} />,
+    nodes: [
+      { 
+        id: 'twitter-integration', 
+        label: 'Twitter/X', 
+        icon: 'twitter', 
+        color: '#1DA1F2', 
+        description: 'Connect to Twitter/X' 
+      },
+      { 
+        id: 'facebook-integration', 
+        label: 'Facebook', 
+        icon: 'facebook', 
+        color: '#1877F2', 
+        description: 'Connect to Facebook' 
+      },
+      { 
+        id: 'linkedin-integration', 
+        label: 'LinkedIn', 
+        icon: 'linkedin', 
+        color: '#0A66C2', 
+        description: 'Connect to LinkedIn' 
+      },
+      { 
+        id: 'discord-integration', 
+        label: 'Discord', 
+        icon: 'discord', 
+        color: '#5865F2', 
+        description: 'Connect to Discord' 
+      },
+      { 
+        id: 'telegram-integration', 
+        label: 'Telegram', 
+        icon: 'telegram', 
+        color: '#26A5E4', 
+        description: 'Connect to Telegram' 
+      },
+      { 
+        id: 'whatsapp-integration', 
+        label: 'WhatsApp', 
+        icon: 'whatsapp', 
+        color: '#25D366', 
+        description: 'Connect to WhatsApp' 
       },
     ]
   },
@@ -493,6 +607,7 @@ interface CustomNodeData extends NodeData {
   id?: string;
   description: string;
   isNew?: boolean;
+  headerLevel?: 'h1' | 'h2' | 'h3';
 }
 
 // Add custom CSS to ensure scrolling works on all browsers
@@ -631,13 +746,53 @@ export function NodePanel({ className }: NodePanelProps) {
   ];
   
   // Handle adding a node (click)
-  const handleAddNode = (node: NodeData) => {
-    // Add node at center of viewport
+  const handleAddNode = (node: CustomNodeData) => {
+    // Check if this is a header node
+    if (node.id?.startsWith('header-')) {
+      const headerLevel = node.headerLevel || 'h1';
+      const headerData = {
+        text: node.label || 'New Header',
+        level: headerLevel,
+        fontSize: headerLevel === 'h1' ? 28 : headerLevel === 'h2' ? 22 : 18,
+        fontWeight: 'semibold' as 'semibold',
+        fontFamily: 'sans' as 'sans',
+        color: '#ffffff',
+        alignment: 'left' as 'left',
+        width: 320,
+      };
+      
+      const { addHeaderNode } = useNodeStore.getState();
+      addHeaderNode(headerData, { x: 250, y: 150 });
+      return;
+    }
+    
+    // For regular nodes
     addNode(node, { x: 250, y: 150 });
   };
   
   // Create a safe wrapper for handling drag start events
   const onDragStartHandler = (node: CustomNodeData) => (event: React.DragEvent<HTMLDivElement>) => {
+    // Special handling for header nodes
+    if (node.id?.startsWith('header-')) {
+      const headerLevel = node.headerLevel || 'h1';
+      const headerData = {
+        type: 'header',
+        text: node.label || 'New Header',
+        level: headerLevel,
+        fontSize: headerLevel === 'h1' ? 28 : headerLevel === 'h2' ? 22 : 18,
+        fontWeight: 'semibold' as 'semibold',
+        fontFamily: 'sans' as 'sans',
+        color: '#ffffff',
+        alignment: 'left' as 'left',
+        width: 320,
+      };
+      
+      event.dataTransfer.setData('application/reactflow', JSON.stringify(headerData));
+      event.dataTransfer.effectAllowed = 'move';
+      return;
+    }
+    
+    // Regular node handling
     // Remove properties we don't want to pass to the node store
     const nodeDataForStore = { ...node };
     
@@ -646,6 +801,8 @@ export function NodePanel({ className }: NodePanelProps) {
     delete (nodeDataForStore as Record<string, any>).description;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (nodeDataForStore as Record<string, any>).isNew;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (nodeDataForStore as Record<string, any>).headerLevel;
     
     // Set the drag data
     event.dataTransfer.setData('application/reactflow', JSON.stringify(nodeDataForStore));
