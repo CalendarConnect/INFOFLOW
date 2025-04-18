@@ -26,12 +26,13 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from '@/components/ui/accordion';
-import { NodeData, useNodeStore } from '@/store/nodeStore';
+import { NodeData, useNodeStore, HeaderNodeData } from '@/store/nodeStore';
 import { Icon } from '@iconify/react';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AnimatePresence, motion } from 'framer-motion';
 import { IntegrationIcon } from '@/components/ui/integration-icon';
 import { INTEGRATION_ICONS } from '@/lib/integrationIcons';
+import { v4 as uuidv4 } from 'uuid';
 
 // Node category definitions with expanded categories and nodes
 const nodeCategories = [
@@ -485,6 +486,7 @@ const nodeCategories = [
     icon: <Layers size={16} />,
     featured: true,
     nodes: [
+      // E-commerce integrations
       { 
         id: 'shopify', 
         label: 'Shopify', 
@@ -501,35 +503,47 @@ const nodeCategories = [
         description: 'Process payments with Stripe' 
       },
       { 
+        id: 'woocommerce', 
+        label: 'WooCommerce', 
+        icon: 'woocommerce', 
+        color: '#7F54B3', 
+        description: 'Connect to WooCommerce',
+        isNew: true 
+      },
+      { 
+        id: 'paypal', 
+        label: 'PayPal', 
+        icon: 'paypal', 
+        color: '#003087', 
+        description: 'Accept PayPal payments',
+        isNew: true 
+      },
+      { 
+        id: 'chargebee', 
+        label: 'Chargebee', 
+        icon: 'chargebee', 
+        color: '#5A31F4', 
+        description: 'Subscription billing platform',
+        isNew: true 
+      },
+      { 
+        id: 'magento', 
+        label: 'Magento', 
+        icon: 'magento', 
+        color: '#EE672F', 
+        description: 'Connect to Magento store',
+        isNew: true 
+      },
+      // Developer platforms
+      { 
         id: 'github', 
         label: 'GitHub', 
         icon: 'github', 
         color: '#181717', 
-        description: 'Connect to GitHub',
+        description: 'Connect to GitHub repositories',
         isNew: true 
       },
-      { 
-        id: 'instagram', 
-        label: 'Instagram', 
-        icon: 'instagram', 
-        color: '#E4405F', 
-        description: 'Connect to Instagram',
-        isNew: true
-      },
-      { 
-        id: 'slack-integration', 
-        label: 'Slack', 
-        icon: 'slack', 
-        color: '#4A154B', 
-        description: 'Connect to Slack workspace' 
-      },
-      { 
-        id: 'notion-integration', 
-        label: 'Notion', 
-        icon: 'notion', 
-        color: '#000000', 
-        description: 'Connect to Notion workspace' 
-      },
+      // CRM & Marketing
       { 
         id: 'hubspot-integration', 
         label: 'HubSpot', 
@@ -539,11 +553,168 @@ const nodeCategories = [
         isNew: true
       },
       { 
+        id: 'salesforce-integration', 
+        label: 'Salesforce', 
+        icon: 'salesforce', 
+        color: '#00A1E0', 
+        description: 'Connect to Salesforce CRM' 
+      },
+      { 
+        id: 'intercom-integration', 
+        label: 'Intercom', 
+        icon: 'intercom', 
+        color: '#1F8DED', 
+        description: 'Customer messaging platform' 
+      },
+      { 
+        id: 'zendesk-integration', 
+        label: 'Zendesk', 
+        icon: 'zendesk', 
+        color: '#03363D', 
+        description: 'Customer support platform' 
+      },
+      { 
+        id: 'mailgun-integration', 
+        label: 'Mailgun', 
+        icon: 'mailgun', 
+        color: '#F0272D', 
+        description: 'Email API service' 
+      },
+      { 
+        id: 'pipedrive-integration', 
+        label: 'Pipedrive', 
+        icon: 'pipedrive', 
+        color: '#26292C', 
+        description: 'Sales CRM platform',
+        isNew: true 
+      },
+      { 
+        id: 'zoho-crm-integration', 
+        label: 'Zoho CRM', 
+        icon: 'zoho-crm', 
+        color: '#C00', 
+        description: 'Connect to Zoho CRM',
+        isNew: true 
+      },
+      { 
+        id: 'activecampaign-integration', 
+        label: 'ActiveCampaign', 
+        icon: 'activecampaign', 
+        color: '#356AE6', 
+        description: 'Marketing automation platform',
+        isNew: true 
+      },
+      // Productivity & Calendar
+      { 
+        id: 'notion-integration', 
+        label: 'Notion', 
+        icon: 'notion', 
+        color: '#000000', 
+        description: 'Connect to Notion workspace' 
+      },
+      { 
+        id: 'asana-integration', 
+        label: 'Asana', 
+        icon: 'asana', 
+        color: '#F06A6A', 
+        description: 'Project management tool',
+        isNew: true 
+      },
+      { 
+        id: 'trello-integration', 
+        label: 'Trello', 
+        icon: 'trello', 
+        color: '#0079BF', 
+        description: 'Visual project management',
+        isNew: true 
+      },
+      { 
+        id: 'clickup-integration', 
+        label: 'ClickUp', 
+        icon: 'clickup', 
+        color: '#7B68EE', 
+        description: 'Project management platform',
+        isNew: true 
+      },
+      { 
+        id: 'calendly-integration', 
+        label: 'Calendly', 
+        icon: 'calendly', 
+        color: '#006BFF', 
+        description: 'Scheduling automation',
+        isNew: true 
+      },
+      { 
+        id: 'cal-integration', 
+        label: 'Cal.com', 
+        icon: 'cal', 
+        color: '#111827', 
+        description: 'Open scheduling infrastructure',
+        isNew: true 
+      },
+      // Analytics
+      { 
         id: 'google-analytics-integration', 
         label: 'Google Analytics', 
         icon: 'google-analytics', 
         color: '#E37400', 
-        description: 'Connect to Google Analytics' 
+        description: 'Web analytics service' 
+      },
+      { 
+        id: 'google-ads-integration', 
+        label: 'Google Ads', 
+        icon: 'google-ads', 
+        color: '#4285F4', 
+        description: 'Online advertising platform' 
+      },
+      // AI/ML
+      { 
+        id: 'openai-integration', 
+        label: 'OpenAI', 
+        icon: 'openai', 
+        color: '#10a37f', 
+        description: 'AI text and image generation',
+        isNew: true 
+      },
+      { 
+        id: 'anthropic-integration', 
+        label: 'Anthropic', 
+        icon: 'anthropic', 
+        color: '#5A1BEE', 
+        description: 'Claude AI assistant',
+        isNew: true 
+      },
+      { 
+        id: 'ollama-integration', 
+        label: 'Ollama', 
+        icon: 'ollama', 
+        color: '#FF6A6A', 
+        description: 'Local large language models',
+        isNew: true 
+      },
+      { 
+        id: 'deepseek-integration', 
+        label: 'DeepSeek', 
+        icon: 'deepseek', 
+        color: '#0078D4', 
+        description: 'Advanced AI models',
+        isNew: true 
+      },
+      { 
+        id: 'gemini-integration', 
+        label: 'Google Gemini', 
+        icon: 'gemini', 
+        color: '#4285F4', 
+        description: 'Google AI model integration',
+        isNew: true 
+      },
+      { 
+        id: 'jasper-integration', 
+        label: 'Jasper', 
+        icon: 'jasper', 
+        color: '#FF7900', 
+        description: 'AI content assistant',
+        isNew: true 
       },
     ]
   },
@@ -552,6 +723,14 @@ const nodeCategories = [
     label: 'Social Media',
     icon: <MessageSquare size={16} />,
     nodes: [
+      { 
+        id: 'instagram-integration', 
+        label: 'Instagram', 
+        icon: 'instagram', 
+        color: '#E4405F', 
+        description: 'Connect to Instagram',
+        isNew: true
+      },
       { 
         id: 'twitter-integration', 
         label: 'Twitter/X', 
@@ -593,6 +772,75 @@ const nodeCategories = [
         icon: 'whatsapp', 
         color: '#25D366', 
         description: 'Connect to WhatsApp' 
+      },
+      { 
+        id: 'slack-integration', 
+        label: 'Slack', 
+        icon: 'slack', 
+        color: '#4A154B', 
+        description: 'Connect to Slack workspace' 
+      },
+      { 
+        id: 'teams-integration', 
+        label: 'Microsoft Teams', 
+        icon: 'microsoft-teams', 
+        color: '#6264A7', 
+        description: 'Connect to Microsoft Teams' 
+      },
+      { 
+        id: 'gmail-integration', 
+        label: 'Gmail', 
+        icon: 'gmail', 
+        color: '#EA4335', 
+        description: 'Connect to Gmail',
+        isNew: true 
+      },
+      { 
+        id: 'outlook-integration', 
+        label: 'Outlook', 
+        icon: 'microsoft-outlook', 
+        color: '#0078D4', 
+        description: 'Connect to Outlook',
+        isNew: true 
+      },
+    ]
+  },
+  {
+    id: 'web-platforms',
+    label: 'Web & CMS',
+    icon: <Globe size={16} />,
+    nodes: [
+      { 
+        id: 'webflow-integration', 
+        label: 'Webflow', 
+        icon: 'webflow', 
+        color: '#4353FF', 
+        description: 'Connect to Webflow sites',
+        isNew: true 
+      },
+      { 
+        id: 'wordpress-integration', 
+        label: 'WordPress', 
+        icon: 'wordpress', 
+        color: '#21759B', 
+        description: 'Connect to WordPress sites',
+        isNew: true 
+      },
+      { 
+        id: 'highlevel-integration', 
+        label: 'HighLevel', 
+        icon: 'highlevel', 
+        color: '#16DB65', 
+        description: 'Marketing platform',
+        isNew: true 
+      },
+      { 
+        id: 'surveymonkey-integration', 
+        label: 'SurveyMonkey', 
+        icon: 'surveymonkey', 
+        color: '#00BF6F', 
+        description: 'Online survey platform',
+        isNew: true 
       },
     ]
   },
@@ -750,14 +998,14 @@ export function NodePanel({ className }: NodePanelProps) {
     // Check if this is a header node
     if (node.id?.startsWith('header-')) {
       const headerLevel = node.headerLevel || 'h1';
-      const headerData = {
+      const headerData: HeaderNodeData = {
         text: node.label || 'New Header',
         level: headerLevel,
         fontSize: headerLevel === 'h1' ? 28 : headerLevel === 'h2' ? 22 : 18,
-        fontWeight: 'semibold' as 'semibold',
-        fontFamily: 'sans' as 'sans',
+        fontWeight: 'semibold',
+        fontFamily: 'sans',
         color: '#ffffff',
-        alignment: 'left' as 'left',
+        alignment: 'left',
         width: 320,
       };
       
@@ -776,15 +1024,19 @@ export function NodePanel({ className }: NodePanelProps) {
     if (node.id?.startsWith('header-')) {
       const headerLevel = node.headerLevel || 'h1';
       const headerData = {
+        id: `header-${uuidv4()}`,
         type: 'header',
-        text: node.label || 'New Header',
-        level: headerLevel,
-        fontSize: headerLevel === 'h1' ? 28 : headerLevel === 'h2' ? 22 : 18,
-        fontWeight: 'semibold' as 'semibold',
-        fontFamily: 'sans' as 'sans',
-        color: '#ffffff',
-        alignment: 'left' as 'left',
-        width: 320,
+        position: { x: 0, y: 0 },
+        data: {
+          text: node.label || 'New Header',
+          level: headerLevel,
+          fontSize: headerLevel === 'h1' ? 28 : headerLevel === 'h2' ? 22 : 18,
+          fontWeight: 'semibold',
+          fontFamily: 'sans',
+          color: '#ffffff',
+          alignment: 'left',
+          width: 320,
+        }
       };
       
       event.dataTransfer.setData('application/reactflow', JSON.stringify(headerData));
